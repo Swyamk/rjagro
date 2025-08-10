@@ -1,0 +1,19 @@
+[package]
+name = "distracted-swartz"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [".","migration", "entity"]
+
+[dependencies]
+migration = { path = "migration" }
+entity = {path = "entity"}
+axum = "0.8"
+shuttle-axum = "0.56.0"
+shuttle-runtime = "0.56.0"
+tokio = {version= "1.47.1", features = ["full"]}
+sea-orm = { version = "1.1.0", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.142"
+chrono = "0.4.41"
