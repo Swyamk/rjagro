@@ -4,7 +4,7 @@ use super::sea_orm_active_enums::UserRole;
 use sea_orm::entity::prelude::*;
 use serde::Serialize;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq,Serialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize)]
 #[sea_orm(table_name = "users")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -12,6 +12,7 @@ pub struct Model {
     pub name: String,
     #[sea_orm(unique)]
     pub email: String,
+    pub password: String,
     pub role: UserRole,
     pub created_at: DateTimeWithTimeZone,
 }

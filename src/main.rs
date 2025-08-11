@@ -1,10 +1,15 @@
+use std::sync::Arc;
+
+use axum::routing::post;
 use axum::{routing::get, Router};
-use sea_orm::{Database, DatabaseConnection};
 // use migration::{Migrator, MigratorTrait};
+use sea_orm::{Database, DatabaseConnection};
 use shuttle_runtime::SecretStore;
+mod auth;
 mod fetch_all;
 mod routes;
-use crate::routes::fetch_all::fetch_all;
+use crate::auth::login::login_handler;
+use crate::{auth::middleware::auth_middleware, routes::fetch_all::fetch_all};
 async fn hello_world() -> &'static str {
     "Hello, world!"
 }
@@ -24,11 +29,18 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
     // Migrator::up(&db, None)
     //     .await
     //     .expect("Migration failed");
+    // Migrator::fresh(&db).await.expect("failllled");
 
     // 4. Build router
+    let shared_secrets = Arc::new(secret_store);
     let router = Router::new()
         .nest("/getall", fetch_all())
         .route("/", get(hello_world))
+        .layer(axum::middleware::from_fn_with_state(
+            shared_secrets.clone(),
+            auth_middleware,
+        ))
+        .route("/login", post(login_handler))
         .with_state(db);
 
     Ok(router.into())

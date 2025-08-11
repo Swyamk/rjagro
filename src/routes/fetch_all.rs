@@ -1,23 +1,24 @@
-use axum::{routing::get, Router};
+use axum::{middleware, routing::get, Router};
 use sea_orm::DatabaseConnection;
 
-use crate::fetch_all::{
-    get_users_handler,
-    get_production_lines_handler,
-    get_purchases_handler,
-    get_batches_handler,
-    get_batch_requirements_handler,
-    get_batch_allocations_handler,
-    get_farmers_handler,
-    get_traders_handler,
-    get_suppliers_handler,
-    get_bird_count_history_handler,
-    get_bird_sell_history_handler,
+use crate::{
+    auth::middleware::{require_roles_middleware, RequireRoles},
+    fetch_all::{
+        get_batch_allocations_handler, get_batch_requirements_handler, get_batches_handler,
+        get_bird_count_history_handler, get_bird_sell_history_handler, get_farmers_handler,
+        get_production_lines_handler, get_purchases_handler, get_suppliers_handler,
+        get_traders_handler, get_users_handler,
+    },
 };
+use entity::sea_orm_active_enums::UserRole;
 
 pub fn fetch_all() -> Router<DatabaseConnection> {
     Router::new()
         .route("/users", get(get_users_handler))
+        .layer(middleware::from_fn_with_state(
+            RequireRoles::new(&[UserRole::Admin]),
+            require_roles_middleware,
+        ))
         .route("/production_lines", get(get_production_lines_handler))
         .route("/purchases", get(get_purchases_handler))
         .route("/batches", get(get_batches_handler))

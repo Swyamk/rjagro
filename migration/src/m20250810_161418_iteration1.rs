@@ -61,6 +61,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(Users::UserId))
                     .col(string_len(Users::Name, 100).not_null())
                     .col(string_len(Users::Email, 100).not_null().unique_key())
+                    .col(string_len(Users::Password,100).not_null())
                     .col(ColumnDef::new(Users::Role).custom(UserRole::Table).not_null())
                     .col(timestamp_with_time_zone(Users::CreatedAt).default(Expr::current_timestamp()))
                     .to_owned(),
@@ -432,6 +433,7 @@ enum Users {
     UserId,
     Name,
     Email,
+    Password,
     Role,
     CreatedAt,
 }
