@@ -3,7 +3,7 @@ use sea_orm::DatabaseConnection;
 
 use crate::{
     auth::middleware::{require_roles_middleware, RequireRoles},
-    fetch_all::{
+    handlers::fetch_all::{
         get_batch_allocations_handler, get_batch_requirements_handler, get_batches_handler,
         get_bird_count_history_handler, get_bird_sell_history_handler, get_farmers_handler,
         get_production_lines_handler, get_purchases_handler, get_suppliers_handler,

@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize,Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "batch_status")]
 pub enum BatchStatus {
     #[sea_orm(string_value = "open")]
@@ -11,7 +11,7 @@ pub enum BatchStatus {
     #[sea_orm(string_value = "closed")]
     Closed,
 }
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize,Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "purchase_category")]
 pub enum PurchaseCategory {
     #[sea_orm(string_value = "bird")]
@@ -21,7 +21,7 @@ pub enum PurchaseCategory {
     #[sea_orm(string_value = "medicine")]
     Medicine,
 }
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize,Deserialize)]
 #[sea_orm(
     rs_type = "String",
     db_type = "Enum",
@@ -35,7 +35,7 @@ pub enum RequirementCategory {
     #[sea_orm(string_value = "medicine")]
     Medicine,
 }
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum,Serialize,Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "supplier_type")]
 pub enum SupplierType {
     #[sea_orm(string_value = "feed")]

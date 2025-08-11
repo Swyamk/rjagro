@@ -1,0 +1,22 @@
+use axum::{routing::post, Router};
+use sea_orm::DatabaseConnection;
+
+use crate::handlers::inserts::{
+    create_batch, create_batch_allocation, create_batch_requirement, create_bird_count_history,
+    create_bird_sell_history, create_farmer, create_production_line, create_purchase,
+    create_supplier, create_trader,
+};
+
+pub fn insert_routes() -> Router<DatabaseConnection> {
+    Router::new()
+        .route("/production_lines", post(create_production_line))
+        .route("/purchases", post(create_purchase))
+        .route("/batches", post(create_batch))
+        .route("/batch_requirements", post(create_batch_requirement))
+        .route("/batch_allocations", post(create_batch_allocation))
+        .route("/farmers", post(create_farmer))
+        .route("/traders", post(create_trader))
+        .route("/suppliers", post(create_supplier))
+        .route("/bird_count_history", post(create_bird_count_history))
+        .route("/bird_sell_history", post(create_bird_sell_history))
+}
