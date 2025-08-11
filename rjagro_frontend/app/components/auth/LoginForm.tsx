@@ -48,22 +48,19 @@ export const LoginForm = () => {
 
         try {
             console.log('Submitting login form with data:', formData);
-            const response = await axios.post('http://127.0.0.1:8000/login', formData, {
-                headers: { 'Content-Type': 'application/json' }
-            });
-            login(response.data.user, response.data.token);
-            console.log('Login successful:', response.data);
 
-        } catch (error: any) {
-            if (error.response) {
-                // Server responded with a non-2xx status
-                setApiError(error.response.data.message || 'Login failed');
-            } else if (error.request) {
-                // Request was made but no response received
-                setApiError('No response from server. Please try again.');
+        const response = await axios.post('https://distracted-swartz-q1c7.shuttle.app/login', formData, {
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+        });
+        login(response.data.user, response.data.token);
+        console.log('Login successful:', response.data);
+
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                setApiError(error.response?.data?.message || 'Login failed');
             } else {
-                // Something else happened
-                setApiError('An error occurred. Please try again.');
+                setApiError('An unexpected error occurred.');
             }
         } finally {
             setIsLoading(false);
@@ -182,7 +179,7 @@ export const LoginForm = () => {
 
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
+                            Don&apos;t have an account?{' '}
                             <a href="#" className="text-orange-500 hover:text-orange-600 font-medium">
                                 Sign up
                             </a>
