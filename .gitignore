@@ -3,3 +3,47 @@
 .shuttle*
 Secrets*.toml
 .env
+
+
+
+
+
+# dependencies
+./rjagro_frontend/node_modules
+./rjagro_frontend/.pnp
+./rjagro_frontend/.pnp.*
+./rjagro_frontend/.yarn/*
+./rjagro_frontend/!.yarn/patches
+./rjagro_frontend/!.yarn/plugins
+./rjagro_frontend/!.yarn/releases
+./rjagro_frontend/!.yarn/versions
+
+# testing
+./rjagro_frontend/coverage
+
+# next.js
+./rjagro_frontend/.next/
+./rjagro_frontend/out/
+
+# production
+./rjagro_frontend/build
+
+# misc
+./rjagro_frontend.DS_Store
+./rjagro_frontend*.pem
+
+# debug
+./rjagro_frontendnpm-debug.log*
+./rjagro_frontendyarn-debug.log*
+./rjagro_frontend/yarn-error.log*
+./rjagro_frontend/.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+./rjagro_frontend/.env*
+
+# vercel
+./rjagro_frontend/.vercel
+
+# typescript
+./rjagro_frontend/*.tsbuildinfo
+./rjagro_frontend/next-env.d.ts
