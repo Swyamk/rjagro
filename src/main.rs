@@ -10,6 +10,7 @@ mod routes;
 mod handlers;
 mod models;
 use crate::auth::login::login_handler;
+use crate::handlers::visibility::get_visibility_handler;
 use crate::routes::inserts::insert_routes;
 use crate::{auth::middleware::auth_middleware, routes::fetch_all::fetch_all};
 async fn hello_world() -> &'static str {
@@ -39,6 +40,7 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
         .nest("/getall", fetch_all())
         .nest("/insert",insert_routes())
         .route("/", get(hello_world))
+        .route("/visibility",get(get_visibility_handler))
         .layer(axum::middleware::from_fn_with_state(
             shared_secrets.clone(),
             auth_middleware,
