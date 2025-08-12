@@ -1,6 +1,7 @@
 'use client'
 import { useAuth } from "@/app/hooks/useAuth";
 import { FormErrors } from "@/app/types/auth";
+import api from "@/app/utils/api";
 import axios from "axios";
 import { useState } from "react";
 
@@ -49,12 +50,12 @@ export const LoginForm = () => {
         try {
             console.log('Submitting login form with data:', formData);
 
-        const response = await axios.post('https://distracted-swartz-q1c7.shuttle.app/login', formData, {
-            headers: { 'Content-Type': 'application/json' },
-            withCredentials: true
-        });
-        login(response.data.user, response.data.token);
-        console.log('Login successful:', response.data);
+            const response = await api.post("/login", formData, {
+                headers: { "Content-Type": "application/json" }
+            });
+            console.log('Login headers:', response.headers);
+            login(response.data.user, response.data.token);
+            console.log('Login successful:', response.data);
 
         } catch (error) {
             if (axios.isAxiosError(error)) {

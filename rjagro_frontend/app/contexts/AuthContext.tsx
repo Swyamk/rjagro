@@ -1,6 +1,7 @@
 'use client'
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types/auth';
+import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -9,42 +10,95 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Check for existing auth on mount
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check if user is authenticated by calling a protected endpoint
-        // or checking localStorage for user data
+        // Check if "token" cookie exists
+        const getCookie = (name: string) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return null;
+        };
+
+        const tokenCookie = getCookie('token');
+        if (!tokenCookie) {
+          console.log('No token found, redirecting to login');
+          router.push('/');
+          return;
+        }
+
+        // Optionally, decode JWT and check expiry
+        const decodeJwt = (token: string) => {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload;
+          } catch {
+            return null;
+          }
+        };
+
+        const payload = decodeJwt(tokenCookie);
+        if (!payload || (payload.exp && Date.now() >= payload.exp * 1000)) {
+          router.push('/');
+          return;
+        }
+
+        // If token is valid, restore user from localStorage
         const savedUser = localStorage.getItem('user');
-        
         if (savedUser) {
           const parsedUser: User = JSON.parse(savedUser);
           setUser(parsedUser);
-          // Token is automatically handled by HTTP-only cookie
-          setToken('authenticated'); // Just a flag since we can't access HTTP-only cookie
         }
+        setToken(tokenCookie);
       } catch (error) {
         console.error('Error initializing auth:', error);
-        // Clear corrupted data
         localStorage.removeItem('user');
         await logout();
+        router.push('/');
       } finally {
         setLoading(false);
       }
     };
-
     initializeAuth();
-  }, []);
+  }, [router]);
+
+  // useEffect(() => {
+  //   const initializeAuth = async () => {
+  //     try {
+  //       // Check if user is authenticated by calling a protected endpoint
+  //       // or checking localStorage for user data
+  //       const savedUser = localStorage.getItem('user');
+
+  //       if (savedUser) {
+  //         const parsedUser: User = JSON.parse(savedUser);
+  //         setUser(parsedUser);
+
+  //       }
+  //     } catch (error) {
+  //       console.error('Error initializing auth:', error);
+  //       // Clear corrupted data
+  //       localStorage.removeItem('user');
+  //       await logout();
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   initializeAuth();
+  // }, []);
 
   const login = (userData: User, authToken: string): void => {
     try {
       setUser(userData);
-      setToken(authToken); // Store the token for reference, but cookie is handled by backend
-      
+      setToken(authToken);
+      document.cookie = `token=${authToken}; path=/;`;
       // Only save user data to localStorage (token is in HTTP-only cookie)
       localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
@@ -53,17 +107,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+
   const logout = async (): Promise<void> => {
     try {
-      // Call logout endpoint to clear HTTP-only cookie
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include', // Important: include cookies in request
-      });
-      
       setUser(null);
       setToken(null);
       localStorage.removeItem('user');
+      // Remove all cookies (or just the "token" cookie)
+      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } catch (error) {
       console.error('Error during logout:', error);
       // Even if logout API fails, clear local state
