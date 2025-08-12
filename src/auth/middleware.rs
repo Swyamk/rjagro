@@ -37,6 +37,7 @@ pub async fn auth_middleware(
 
     let claims = match token {
         Some(token) => {
+            println!("Token: {}", token);
             let jwt_secret = secret_store
                 .get("JWT_SECRET")
                 .ok_or((StatusCode::INTERNAL_SERVER_ERROR, "JWT_SECRET missing"))?;

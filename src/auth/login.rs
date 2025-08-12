@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use bcrypt::verify;
-use cookie::Cookie;
+use cookie::{Cookie, SameSite};
 use entity::users;
 use jsonwebtoken::encode;
 use jsonwebtoken::EncodingKey;
@@ -73,8 +73,11 @@ pub async fn login_handler(
     // Create response with token in cookie and header
     let bearer_token = format!("Bearer {}", token);
     let mut cookie = Cookie::new("token", bearer_token.clone());
-    cookie.set_http_only(true);
+    cookie.set_http_only(false);
     cookie.set_path("/");
+    cookie.set_secure(true);
+    cookie.set_same_site(SameSite::None);
+    cookie.set_partitioned(true);
     // For production, also set cookie.set_secure(true) and SameSite
 
     let mut headers = HeaderMap::new();

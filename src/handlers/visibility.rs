@@ -1,10 +1,10 @@
-use axum::{response::IntoResponse, Json};
+use axum::{extract::Extension, response::IntoResponse, Json};
 use entity::sea_orm_active_enums::UserRole;
 use std::collections::HashMap;
 
-// todo add this into database, and create endpoints to manipulate it
-pub async fn get_visibility_handler() -> impl IntoResponse {
-    // Predefined table access per role
+pub async fn get_visibility_handler(
+    Extension(role): Extension<UserRole>,
+) -> impl IntoResponse {
     let mut visibility: HashMap<UserRole, Vec<&'static str>> = HashMap::new();
 
     visibility.insert(
@@ -38,13 +38,9 @@ pub async fn get_visibility_handler() -> impl IntoResponse {
         ],
     );
 
-    visibility.insert(
-        UserRole::Accountant,
-        vec![
-            "purchases",
-            "suppliers",
-        ],
-    );
+    visibility.insert(UserRole::Accountant, vec!["purchases", "suppliers"]);
 
-    Json(visibility).into_response()
+    // Return only the tables visible for this role
+    let tables = visibility.get(&role).cloned().unwrap_or_default();
+    Json(tables).into_response()
 }
