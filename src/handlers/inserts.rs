@@ -1,7 +1,7 @@
-use axum::{extract::State, Json, http::StatusCode};
-use sea_orm::{DatabaseConnection, EntityTrait, ActiveModelTrait, Set};
-use entity::*;
 use crate::models::*;
+use axum::{extract::State, http::StatusCode, Json};
+use entity::*;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
 /// Production Lines
 pub async fn create_production_line(
@@ -13,7 +13,11 @@ pub async fn create_production_line(
         supervisor_id: Set(payload.supervisor_id),
         ..Default::default()
     };
-    new_line.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_line
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Purchases
@@ -22,10 +26,7 @@ pub async fn create_purchase(
     Json(payload): Json<CreatePurchase>,
 ) -> Result<Json<purchases::Model>, StatusCode> {
     let new_purchase = purchases::ActiveModel {
-        category: Set(payload.category),
-        item_name: Set(payload.item_name),
-        quantity: Set(payload.quantity),
-        unit:Set(payload.unit),
+        item_code: Set(payload.item_code),
         cost_per_unit: Set(payload.cost_per_unit),
         total_cost: Set(payload.total_cost),
         purchase_date: Set(payload.purchase_date),
@@ -33,7 +34,11 @@ pub async fn create_purchase(
         created_by: Set(payload.created_by),
         ..Default::default()
     };
-    new_purchase.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+
+    new_purchase.insert(&db).await.map(Json).map_err(|err| {
+        eprintln!("Failed to insert purchase: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })
 }
 
 /// Batches
@@ -51,7 +56,11 @@ pub async fn create_batch(
         status: Set(payload.status),
         ..Default::default()
     };
-    new_batch.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_batch
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Batch Requirements
@@ -67,7 +76,11 @@ pub async fn create_batch_requirement(
         request_date: Set(payload.request_date),
         ..Default::default()
     };
-    new_req.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_req
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Batch Allocations
@@ -83,7 +96,11 @@ pub async fn create_batch_allocation(
         allocated_by: Set(payload.allocated_by),
         ..Default::default()
     };
-    new_alloc.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_alloc
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Farmers
@@ -101,7 +118,11 @@ pub async fn create_farmer(
         area_size: Set(payload.area_size),
         ..Default::default()
     };
-    new_farmer.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_farmer
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Traders
@@ -119,7 +140,11 @@ pub async fn create_trader(
         area: Set(payload.area),
         ..Default::default()
     };
-    new_trader.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_trader
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Suppliers
@@ -137,7 +162,11 @@ pub async fn create_supplier(
         ifsc_code: Set(payload.ifsc_code),
         ..Default::default()
     };
-    new_supplier.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_supplier
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Bird Count History
@@ -153,7 +182,11 @@ pub async fn create_bird_count_history(
         notes: Set(payload.notes),
         ..Default::default()
     };
-    new_record.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_record
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Bird Sell History
@@ -171,5 +204,9 @@ pub async fn create_bird_sell_history(
         notes: Set(payload.notes),
         ..Default::default()
     };
-    new_sale.insert(&db).await.map(Json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    new_sale
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }

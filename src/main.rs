@@ -36,13 +36,14 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
     // Migrator::up(&db, None)
     //     .await
     //     .expect("Migration failed");
-    // Migrator::fresh(&db).await.expect("failllled");
+    Migrator::fresh(&db).await.expect("failllled");
 
     // 4. Build router
     let shared_secrets = Arc::new(secret_store);
 
     let cors = CorsLayer::new()
-        .allow_origin("https://rjagro.vercel.app".parse::<HeaderValue>().unwrap())
+        // .allow_origin("https://rjagro.vercel.app".parse::<HeaderValue>().unwrap())
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers([
             http::header::CONTENT_TYPE,

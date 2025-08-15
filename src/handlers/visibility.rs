@@ -2,9 +2,7 @@ use axum::{extract::Extension, response::IntoResponse, Json};
 use entity::sea_orm_active_enums::UserRole;
 use std::collections::HashMap;
 
-pub async fn get_visibility_handler(
-    Extension(role): Extension<UserRole>,
-) -> impl IntoResponse {
+pub async fn get_visibility_handler(Extension(role): Extension<UserRole>) -> impl IntoResponse {
     let mut visibility: HashMap<UserRole, Vec<&'static str>> = HashMap::new();
 
     visibility.insert(

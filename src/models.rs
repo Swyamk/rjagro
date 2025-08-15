@@ -1,6 +1,21 @@
-use entity::sea_orm_active_enums::{BatchStatus, PurchaseCategory, RequirementCategory, SupplierType};
+use chrono::NaiveDate;
+use entity::sea_orm_active_enums::{
+    BatchStatus, PurchaseCategory, RequirementCategory, SupplierType,
+};
 use sea_orm::prelude::Decimal;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize)]
+pub struct PurchaseWithItem {
+    pub purchase_id: i32,
+    pub item_code: String,
+    pub item_name: String,
+    pub cost_per_unit: Decimal,
+    pub total_cost: Option<Decimal>,
+    pub purchase_date: NaiveDate,
+    pub supplier: Option<String>,
+    pub created_by: Option<i32>,
+}
 
 #[derive(Deserialize)]
 pub struct CreateProductionLine {
@@ -10,15 +25,12 @@ pub struct CreateProductionLine {
 
 #[derive(Deserialize)]
 pub struct CreatePurchase {
-    pub category: PurchaseCategory,
-    pub item_name: String,
-    pub quantity: Decimal,
-    pub unit: String,
+    pub item_code: String,
     pub cost_per_unit: Decimal,
-    pub total_cost: Decimal,
+    pub total_cost: Option<Decimal>,
     pub purchase_date: chrono::NaiveDate,
-    pub supplier: String,
-    pub created_by: i32,
+    pub supplier: Option<String>,
+    pub created_by: Option<i32>,
 }
 
 #[derive(Deserialize)]

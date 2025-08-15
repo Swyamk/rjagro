@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// Application entity::sea_orm_active_enums.
 /// Extend this enum as you add new entity::sea_orm_active_enums.
 /// `Other(String)` is kept so tokens with unknown entity::sea_orm_active_enums can still be represented.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum UserRole {
     Admin,
     Accountant,
@@ -37,4 +37,3 @@ impl FromStr for UserRole {
         }
     }
 }
-

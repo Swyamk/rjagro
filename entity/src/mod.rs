@@ -8,6 +8,7 @@ pub mod batches;
 pub mod bird_count_history;
 pub mod bird_sell_history;
 pub mod farmers;
+pub mod items;
 pub mod post;
 pub mod production_lines;
 pub mod purchases;

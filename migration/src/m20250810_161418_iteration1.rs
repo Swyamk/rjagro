@@ -1,5 +1,5 @@
-use sea_orm_migration::{prelude::*, schema::*};
 use sea_orm_migration::prelude::extension::postgres::Type;
+use sea_orm_migration::{prelude::*, schema::*};
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -20,7 +20,11 @@ impl MigrationTrait for Migration {
             .create_type(
                 Type::create()
                     .as_enum(PurchaseCategory::Table)
-                    .values([PurchaseCategory::Bird, PurchaseCategory::Feed, PurchaseCategory::Medicine])
+                    .values([
+                        PurchaseCategory::Bird,
+                        PurchaseCategory::Feed,
+                        PurchaseCategory::Medicine,
+                    ])
                     .to_owned(),
             )
             .await?;
@@ -38,7 +42,11 @@ impl MigrationTrait for Migration {
             .create_type(
                 Type::create()
                     .as_enum(RequirementCategory::Table)
-                    .values([RequirementCategory::Bird, RequirementCategory::Feed, RequirementCategory::Medicine])
+                    .values([
+                        RequirementCategory::Bird,
+                        RequirementCategory::Feed,
+                        RequirementCategory::Medicine,
+                    ])
                     .to_owned(),
             )
             .await?;
@@ -47,7 +55,11 @@ impl MigrationTrait for Migration {
             .create_type(
                 Type::create()
                     .as_enum(SupplierType::Table)
-                    .values([SupplierType::Feed, SupplierType::Chick, SupplierType::Medicine])
+                    .values([
+                        SupplierType::Feed,
+                        SupplierType::Chick,
+                        SupplierType::Medicine,
+                    ])
                     .to_owned(),
             )
             .await?;
@@ -61,9 +73,16 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(Users::UserId))
                     .col(string_len(Users::Name, 100).not_null())
                     .col(string_len(Users::Email, 100).not_null().unique_key())
-                    .col(string_len(Users::Password,100).not_null())
-                    .col(ColumnDef::new(Users::Role).custom(UserRole::Table).not_null())
-                    .col(timestamp_with_time_zone(Users::CreatedAt).default(Expr::current_timestamp()))
+                    .col(string_len(Users::Password, 100).not_null())
+                    .col(
+                        ColumnDef::new(Users::Role)
+                            .custom(UserRole::Table)
+                            .not_null(),
+                    )
+                    .col(
+                        timestamp_with_time_zone(Users::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -77,13 +96,29 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(ProductionLines::LineId))
                     .col(string_len(ProductionLines::LineName, 100).not_null())
                     .col(integer(ProductionLines::SupervisorId).not_null())
-                    .col(timestamp_with_time_zone(ProductionLines::CreatedAt).default(Expr::current_timestamp()))
+                    .col(
+                        timestamp_with_time_zone(ProductionLines::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_production_lines_supervisor")
                             .from(ProductionLines::Table, ProductionLines::SupervisorId)
-                            .to(Users::Table, Users::UserId)
+                            .to(Users::Table, Users::UserId),
                     )
+                    .to_owned(),
+            )
+            .await?;
+
+        // Create items table
+        manager
+            .create_table(
+                Table::create()
+                    .table(Items::Table)
+                    .if_not_exists()
+                    .col(string_len(Items::ItemCode, 100).not_null().primary_key())
+                    .col(string_len(Items::ItemName, 100).not_null())
+                    .col(string_len(Items::Unit, 50))
                     .to_owned(),
             )
             .await?;
@@ -95,10 +130,7 @@ impl MigrationTrait for Migration {
                     .table(Purchases::Table)
                     .if_not_exists()
                     .col(pk_auto(Purchases::PurchaseId))
-                    .col(ColumnDef::new(Purchases::Category).custom(PurchaseCategory::Table).not_null())
-                    .col(string_len(Purchases::ItemName, 100).not_null())
-                    .col(decimal_len(Purchases::Quantity, 12, 2).not_null())
-                    .col(string_len(Purchases::Unit, 50))
+                    .col(string_len(Purchases::ItemCode, 100).not_null())
                     .col(decimal_len(Purchases::CostPerUnit, 12, 2).not_null())
                     .col(decimal_len(Purchases::TotalCost, 12, 2))
                     .col(date(Purchases::PurchaseDate).not_null())
@@ -108,7 +140,13 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk_purchases_created_by")
                             .from(Purchases::Table, Purchases::CreatedBy)
-                            .to(Users::Table, Users::UserId)
+                            .to(Users::Table, Users::UserId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_purchases_item_code")
+                            .from(Purchases::Table, Purchases::ItemCode)
+                            .to(Items::Table, Items::ItemCode),
                     )
                     .to_owned(),
             )
@@ -127,19 +165,26 @@ impl MigrationTrait for Migration {
                     .col(date(Batches::EndDate))
                     .col(integer(Batches::InitialBirdCount).not_null())
                     .col(integer(Batches::CurrentBirdCount))
-                    .col(ColumnDef::new(Batches::Status).custom(BatchStatus::Table).default("open"))
-                    .col(timestamp_with_time_zone(Batches::CreatedAt).default(Expr::current_timestamp()))
+                    .col(
+                        ColumnDef::new(Batches::Status)
+                            .custom(BatchStatus::Table)
+                            .default("open"),
+                    )
+                    .col(
+                        timestamp_with_time_zone(Batches::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_batches_line")
                             .from(Batches::Table, Batches::LineId)
-                            .to(ProductionLines::Table, ProductionLines::LineId)
+                            .to(ProductionLines::Table, ProductionLines::LineId),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_batches_supervisor")
                             .from(Batches::Table, Batches::SupervisorId)
-                            .to(Users::Table, Users::UserId)
+                            .to(Users::Table, Users::UserId),
                     )
                     .to_owned(),
             )
@@ -153,7 +198,11 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_auto(BatchRequirements::RequirementId))
                     .col(integer(BatchRequirements::BatchId).not_null())
-                    .col(ColumnDef::new(BatchRequirements::Category).custom(RequirementCategory::Table).not_null())
+                    .col(
+                        ColumnDef::new(BatchRequirements::Category)
+                            .custom(RequirementCategory::Table)
+                            .not_null(),
+                    )
                     .col(decimal_len(BatchRequirements::Quantity, 12, 2).not_null())
                     .col(string_len(BatchRequirements::Unit, 50))
                     .col(date(BatchRequirements::RequestDate).not_null())
@@ -161,7 +210,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk_batch_requirements_batch")
                             .from(BatchRequirements::Table, BatchRequirements::BatchId)
-                            .to(Batches::Table, Batches::BatchId)
+                            .to(Batches::Table, Batches::BatchId),
                     )
                     .to_owned(),
             )
@@ -183,19 +232,19 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk_batch_allocations_requirement")
                             .from(BatchAllocations::Table, BatchAllocations::RequirementId)
-                            .to(BatchRequirements::Table, BatchRequirements::RequirementId)
+                            .to(BatchRequirements::Table, BatchRequirements::RequirementId),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_batch_allocations_purchase")
                             .from(BatchAllocations::Table, BatchAllocations::PurchaseId)
-                            .to(Purchases::Table, Purchases::PurchaseId)
+                            .to(Purchases::Table, Purchases::PurchaseId),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_batch_allocations_user")
                             .from(BatchAllocations::Table, BatchAllocations::AllocatedBy)
-                            .to(Users::Table, Users::UserId)
+                            .to(Users::Table, Users::UserId),
                     )
                     .to_owned(),
             )
@@ -215,7 +264,10 @@ impl MigrationTrait for Migration {
                     .col(string_len(Farmers::BankName, 100).not_null())
                     .col(string_len(Farmers::IfscCode, 15).not_null())
                     .col(decimal_len(Farmers::AreaSize, 10, 2))
-                    .col(timestamp_with_time_zone(Farmers::CreatedAt).default(Expr::current_timestamp()))
+                    .col(
+                        timestamp_with_time_zone(Farmers::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -234,7 +286,10 @@ impl MigrationTrait for Migration {
                     .col(string_len(Traders::BankName, 100).not_null())
                     .col(string_len(Traders::IfscCode, 15).not_null())
                     .col(string_len(Traders::Area, 100))
-                    .col(timestamp_with_time_zone(Traders::CreatedAt).default(Expr::current_timestamp()))
+                    .col(
+                        timestamp_with_time_zone(Traders::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -246,14 +301,25 @@ impl MigrationTrait for Migration {
                     .table(Suppliers::Table)
                     .if_not_exists()
                     .col(pk_auto(Suppliers::SupplierId))
-                    .col(ColumnDef::new(Suppliers::SupplierType).custom(SupplierType::Table).not_null())
+                    .col(
+                        ColumnDef::new(Suppliers::SupplierType)
+                            .custom(SupplierType::Table)
+                            .not_null(),
+                    )
                     .col(string_len(Suppliers::Name, 100).not_null())
-                    .col(string_len(Suppliers::PhoneNumber, 15).not_null().unique_key())
+                    .col(
+                        string_len(Suppliers::PhoneNumber, 15)
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(text(Suppliers::Address).not_null())
                     .col(string_len(Suppliers::BankAccountNo, 30).not_null())
                     .col(string_len(Suppliers::BankName, 100).not_null())
                     .col(string_len(Suppliers::IfscCode, 15).not_null())
-                    .col(timestamp_with_time_zone(Suppliers::CreatedAt).default(Expr::current_timestamp()))
+                    .col(
+                        timestamp_with_time_zone(Suppliers::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -270,13 +336,16 @@ impl MigrationTrait for Migration {
                     .col(integer(BirdCountHistory::Deaths).default(0))
                     .col(integer(BirdCountHistory::Additions).default(0))
                     .col(text(BirdCountHistory::Notes))
-                    .col(timestamp_with_time_zone(BirdCountHistory::CreatedAt).default(Expr::current_timestamp()))
+                    .col(
+                        timestamp_with_time_zone(BirdCountHistory::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_bird_count_history_batch")
                             .from(BirdCountHistory::Table, BirdCountHistory::BatchId)
                             .to(Batches::Table, Batches::BatchId)
-                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -296,19 +365,22 @@ impl MigrationTrait for Migration {
                     .col(decimal_len(BirdSellHistory::PricePerBird, 12, 2).not_null())
                     .col(decimal_len(BirdSellHistory::TotalAmount, 12, 2))
                     .col(text(BirdSellHistory::Notes))
-                    .col(timestamp_with_time_zone(BirdSellHistory::CreatedAt).default(Expr::current_timestamp()))
+                    .col(
+                        timestamp_with_time_zone(BirdSellHistory::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_bird_sell_history_batch")
                             .from(BirdSellHistory::Table, BirdSellHistory::BatchId)
                             .to(Batches::Table, Batches::BatchId)
-                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_bird_sell_history_trader")
                             .from(BirdSellHistory::Table, BirdSellHistory::TraderId)
-                            .to(Traders::Table, Traders::TraderId)
+                            .to(Traders::Table, Traders::TraderId),
                     )
                     .to_owned(),
             )
@@ -322,43 +394,47 @@ impl MigrationTrait for Migration {
         manager
             .drop_table(Table::drop().table(BirdSellHistory::Table).to_owned())
             .await?;
-        
+
         manager
             .drop_table(Table::drop().table(BirdCountHistory::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(Suppliers::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(Traders::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(Farmers::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(BatchAllocations::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(BatchRequirements::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(Batches::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(Purchases::Table).to_owned())
             .await?;
-            
+
+        manager
+            .drop_table(Table::drop().table(Items::Table).to_owned())
+            .await?;
+
         manager
             .drop_table(Table::drop().table(ProductionLines::Table).to_owned())
             .await?;
-            
+
         manager
             .drop_table(Table::drop().table(Users::Table).to_owned())
             .await?;
@@ -451,10 +527,7 @@ enum ProductionLines {
 enum Purchases {
     Table,
     PurchaseId,
-    Category,
-    ItemName,
-    Quantity,
-    Unit,
+    ItemCode,
     CostPerUnit,
     TotalCost,
     PurchaseDate,
@@ -564,4 +637,11 @@ enum BirdSellHistory {
     TotalAmount,
     Notes,
     CreatedAt,
+}
+#[derive(DeriveIden)]
+enum Items {
+    Table,
+    ItemCode, // string PK
+    ItemName,
+    Unit,
 }

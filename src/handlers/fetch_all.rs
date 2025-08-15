@@ -2,6 +2,8 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use entity::*;
 use sea_orm::{DatabaseConnection, EntityTrait};
 
+use crate::models::PurchaseWithItem;
+
 // USERS
 pub async fn get_users_handler(State(db): State<DatabaseConnection>) -> impl IntoResponse {
     match users::Entity::find().all(&db).await {
@@ -28,10 +30,32 @@ pub async fn get_production_lines_handler(
 
 // PURCHASES
 pub async fn get_purchases_handler(State(db): State<DatabaseConnection>) -> impl IntoResponse {
-    match purchases::Entity::find().all(&db).await {
-        Ok(data) => Json(data).into_response(),
+    // find purchases and also the related item (LEFT JOIN semantics via find_also_related)
+    match purchases::Entity::find()
+        .find_also_related(items::Entity)
+        .all(&db)
+        .await
+    {
+        Ok(rows) => {
+            let resp: Vec<PurchaseWithItem> = rows
+                .into_iter()
+                .map(|(p, item_opt)| PurchaseWithItem {
+                    purchase_id: p.purchase_id,
+                    item_code: p.item_code,
+                    // if item missing, fall back to empty string (adjust if you prefer null)
+                    item_name: item_opt.map(|i| i.item_name).unwrap_or_default(),
+                    cost_per_unit: p.cost_per_unit,
+                    total_cost: p.total_cost,
+                    purchase_date: p.purchase_date,
+                    supplier: p.supplier,
+                    created_by: p.created_by,
+                })
+                .collect();
+
+            (StatusCode::OK, Json(resp)).into_response()
+        }
         Err(e) => {
-            eprintln!("Failed to fetch purchases: {}", e);
+            eprintln!("Failed to fetch purchases with items: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
