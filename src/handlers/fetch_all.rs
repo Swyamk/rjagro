@@ -61,6 +61,17 @@ pub async fn get_purchases_handler(State(db): State<DatabaseConnection>) -> impl
     }
 }
 
+// ITEMS
+pub async fn get_items_handler(State(db): State<DatabaseConnection>) -> impl IntoResponse {
+    match items::Entity::find().all(&db).await {
+        Ok(data) => Json(data).into_response(),
+        Err(e) => {
+            eprintln!("Failed to items table: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
 // BATCHES
 pub async fn get_batches_handler(State(db): State<DatabaseConnection>) -> impl IntoResponse {
     match batches::Entity::find().all(&db).await {

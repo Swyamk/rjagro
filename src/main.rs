@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::http::{self, HeaderValue};
 use axum::routing::post;
 use axum::{routing::get, Router};
-use migration::{Migrator, MigratorTrait};
+// use migration::{Migrator, MigratorTrait};
 use reqwest::Method;
 use sea_orm::{Database, DatabaseConnection};
 use shuttle_runtime::SecretStore;
@@ -15,7 +15,7 @@ use crate::auth::login::login_handler;
 use crate::handlers::visibility::get_visibility_handler;
 use crate::routes::inserts::insert_routes;
 use crate::{auth::middleware::auth_middleware, routes::fetch_all::fetch_all};
-use tower_http::cors::{AllowOrigin, Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 
 async fn hello_world() -> &'static str {
     "Hello, world!"
@@ -36,7 +36,7 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
     // Migrator::up(&db, None)
     //     .await
     //     .expect("Migration failed");
-    Migrator::fresh(&db).await.expect("failllled");
+    // Migrator::fresh(&db).await.expect("failllled");
 
     // 4. Build router
     let shared_secrets = Arc::new(secret_store);
