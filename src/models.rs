@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use entity::sea_orm_active_enums::{
-    BatchStatus, PurchaseCategory, RequirementCategory, SupplierType,
+    BatchStatus, RequirementCategory, SupplierType,
 };
 use sea_orm::prelude::Decimal;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,12 @@ pub struct PurchaseWithItem {
     pub purchase_date: NaiveDate,
     pub supplier: Option<String>,
     pub created_by: Option<i32>,
+}
+#[derive(serde::Deserialize)]
+pub struct CreateItem {
+    pub item_code: String,
+    pub item_name: String,
+    pub unit: Option<String>,
 }
 
 #[derive(Deserialize)]

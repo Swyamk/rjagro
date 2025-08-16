@@ -40,6 +40,22 @@ pub async fn create_purchase(
         StatusCode::INTERNAL_SERVER_ERROR
     })
 }
+pub async fn create_item(
+    State(db): State<DatabaseConnection>,
+    Json(payload): Json<CreateItem>,
+) -> Result<Json<items::Model>, StatusCode> {
+    let new_item = items::ActiveModel {
+        item_code: Set(payload.item_code),
+        item_name: Set(payload.item_name),
+        unit: Set(payload.unit),
+        ..Default::default()
+    };
+    new_item
+        .insert(&db)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+}
 
 /// Batches
 pub async fn create_batch(
