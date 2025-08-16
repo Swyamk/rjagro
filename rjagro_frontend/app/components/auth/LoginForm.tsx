@@ -4,12 +4,18 @@ import { FormErrors } from "@/app/types/auth";
 import api from "@/app/utils/api";
 import axios from "axios";
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+
+
 
 export const LoginForm = () => {
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     });
+    const router = useRouter();
+
 
     const [errors, setErrors] = useState<FormErrors>({});
     const [isLoading, setIsLoading] = useState(false);
@@ -53,9 +59,12 @@ export const LoginForm = () => {
             const response = await api.post("/login", formData, {
                 headers: { "Content-Type": "application/json" }
             });
-            console.log('Login headers:', response.headers);
+            toast.success('Login successful!');
+
             login(response.data.user, response.data.token);
             console.log('Login successful:', response.data);
+            router.push('/dashboard');
+
 
         } catch (error) {
             if (axios.isAxiosError(error)) {

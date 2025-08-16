@@ -67,31 +67,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, [router]);
 
-  // useEffect(() => {
-  //   const initializeAuth = async () => {
-  //     try {
-  //       // Check if user is authenticated by calling a protected endpoint
-  //       // or checking localStorage for user data
-  //       const savedUser = localStorage.getItem('user');
-
-  //       if (savedUser) {
-  //         const parsedUser: User = JSON.parse(savedUser);
-  //         setUser(parsedUser);
-
-  //       }
-  //     } catch (error) {
-  //       console.error('Error initializing auth:', error);
-  //       // Clear corrupted data
-  //       localStorage.removeItem('user');
-  //       await logout();
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   initializeAuth();
-  // }, []);
-
   const login = (userData: User, authToken: string): void => {
     try {
       setUser(userData);

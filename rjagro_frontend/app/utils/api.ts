@@ -13,10 +13,9 @@ const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const token = Cookies.get("token");
-    console.log("Token from cookies:", token);
     if (!token) return config;
 
-  
+
     const prevHeaders = config.headers as unknown;
 
     if (prevHeaders && typeof (prevHeaders as any).set === "function") {
@@ -29,7 +28,6 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
             Authorization: `${token}`,
         } as AxiosRequestHeaders;
     }
-    console.log("Updated headers:", config.headers);
     return config;
 }, (error) => Promise.reject(error));
 

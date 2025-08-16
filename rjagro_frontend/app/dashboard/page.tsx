@@ -1,12 +1,28 @@
 'use client'
-import React, { useState, useEffect } from 'react';
-import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
-import api from '../utils/api';
+import React, { useState, useEffect, useContext } from 'react';
+import { fetchPurchases, handleAddPurchase, PurchasePayload } from '../api/purchases';
+import { fetchItems, handleAddItem } from '../api/items';
+import PurchasesTable from '../components/tables/purchases';
+import { useAuth } from '../hooks/useAuth';
+import ItemsTable from '../components/tables/items';
+import { fetchFarmers, handleAddFarmer } from '../api/farmers';
+import FarmersTable from '../components/tables/farmers';
+import { fetchSuppliers, handleAddSupplier } from '../api/supplier';
+import SuppliersTable from '../components/tables/suppliers';
+import { fetchTraders, handleAddTrader } from '../api/traders';
+import TradersTable from '../components/tables/traders';
+
+export enum SupplierType {
+    Feed = 'Feed',
+    Chick = 'Chick',
+    Medicine = 'Medicine',
+}
 
 const Dashboard = () => {
+    const { user } = useAuth();
+
     const [activeTab, setActiveTab] = useState('Purchases');
     const [purchases, setPurchases] = useState<Purchase[]>([]);
-    const [items, setItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [newPurchase, setNewPurchase] = useState<NewPurchase>({
@@ -17,39 +33,84 @@ const Dashboard = () => {
         supplier: ''
     });
 
+    const final: PurchasePayload = {
+        item_code: newPurchase.item_code,
+        cost_per_unit: Number(newPurchase.cost_per_unit),
+        total_cost: Number(newPurchase.cost_per_unit) * Number(newPurchase.quantity),
+        purchase_date: new Date().toISOString().slice(0, 10),
+        supplier: newPurchase.supplier,
+        // fix this shit
+        created_by: user ? user.user_id : 9999,
+    };
+
+    // items
+    const [items, setItems] = useState<Item[]>([]);
+    const [newItem, setNewItem] = useState<Item>({
+        item_code: '',
+        item_name: '',
+        unit: '',
+    });
+    const [showAddItemForm, setShowAddItemForm] = useState(false);
+
+    // Farmers state
+    const [farmers, setFarmers] = useState<Farmer[]>([]);
+    const [newFarmer, setNewFarmer] = useState<NewFarmer>({
+        name: '',
+        phone_number: '',
+        address: '',
+        bank_account_no: '',
+        bank_name: '',
+        ifsc_code: '',
+        area_size: 0
+    });
+
+    //Suppliers state
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [newSupplier, setNewSupplier] = useState<SupplierPayload>({
+        supplier_type: SupplierType.Chick,
+        name: '',
+        phone_number: '',
+        address: '',
+        bank_account_no: '',
+        bank_name: '',
+        ifsc_code: ''
+    });
+
+    // Traders state
+    const [traders, setTraders] = useState<Trader[]>([]);
+    const [newTrader, setNewTrader] = useState<NewTrader>({
+        name: '',
+        phone_number: '',
+        address: '',
+        bank_account_no: '',
+        bank_name: '',
+        ifsc_code: '',
+        area: ''
+    });
+
+
     const tabs = [
-        'Users', 'Production Lines', 'Purchases', 'Batches', 'Batch Requirements',
+        'Users', 'Production Lines', 'Purchases', 'Items', 'Batches', 'Batch Requirements',
         'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
     ];
 
-    // Simulate API calls (replace with actual API calls)
-    const fetchPurchases = async () => {
-        setLoading(true);
-        try {
-            const response = await api.get('/getall/purchases');
-            setPurchases(response.data);
-        } catch (error) {
-            console.error('Error fetching purchases:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchItems = async () => {
-        try {
-            const response = await api.get('/getall/items');
-            console.log('Fetched items:', response.data);
-            setItems(response.data);
-        } catch (error) {
-            console.error('Error fetching items:', error);
-        }
-    };
-
     useEffect(() => {
         // Load items first (needed for dropdown)
-        fetchItems();
+        fetchItems(setItems);
         if (activeTab === 'Purchases') {
-            fetchPurchases();
+            fetchPurchases(setPurchases, setLoading);
+        }
+        if (activeTab === 'Items') {
+            fetchItems(setItems);
+        }
+        if (activeTab === 'Farmers') {
+            fetchFarmers(setFarmers, setLoading);
+        }
+        if (activeTab === 'Suppliers') {
+            fetchSuppliers(setSuppliers, setLoading);
+        }
+        if (activeTab === 'Traders') {
+            fetchTraders(setTraders, setLoading);
         }
     }, [activeTab]);
 
@@ -64,281 +125,7 @@ const Dashboard = () => {
         }
     };
 
-    const calculateTotalCost = () => {
-        const costPerUnit = Number(newPurchase.cost_per_unit) || 0;
-        const quantity = Number(newPurchase.quantity) || 0;
-        return costPerUnit * quantity;
-    };
 
-    const handleAddPurchase = async () => {
-        if (!newPurchase.item_code || !newPurchase.cost_per_unit || !newPurchase.quantity || !newPurchase.supplier) {
-            alert('Please fill in all required fields');
-            return;
-        }
-
-        const purchaseData = {
-            item_code: newPurchase.item_code,
-            cost_per_unit: Number(newPurchase.cost_per_unit),
-            quantity: Number(newPurchase.quantity),
-            supplier: newPurchase.supplier,
-            total_cost: calculateTotalCost(),
-            purchase_date: new Date().toISOString().split('T')[0]
-        };
-
-        try {
-            const response = await api.post('/insert/purchases', purchaseData);
-            console.log('Purchase added:', response.data);
-
-            // Reset form and close
-            setNewPurchase({
-                item_code: '',
-                item_name: '',
-                cost_per_unit: '',
-                quantity: '',
-                supplier: ''
-            });
-            setShowAddForm(false);
-
-            // Refresh purchases list
-            fetchPurchases();
-        } catch (error) {
-            console.error('Error adding purchase:', error);
-            alert('Error adding purchase');
-        }
-    };
-
-    const renderPurchasesTable = () => (
-        <div className="bg-white rounded-lg shadow">
-            <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-xl font-semibold text-gray-800">Purchases</h2>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setShowAddForm(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                        <Plus size={18} />
-                        Add Purchase
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Filter size={18} />
-                        Filters
-                    </button>
-                </div>
-            </div>
-
-            {/* Add Purchase Form */}
-            {showAddForm && (
-                <div className="p-4 border-b bg-gray-50">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium text-gray-800">Add New Purchase</h3>
-                        <button
-                            onClick={() => setShowAddForm(false)}
-                            className="text-gray-500 hover:text-gray-700"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Item Code *
-                            </label>
-                            <select
-                                value={newPurchase.item_code}
-                                onChange={(e) => handleItemCodeSelect(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            >
-                                <option value="">Select Item Code</option>
-                                {items.map((item) => (
-                                    <option key={item.item_code} value={item.item_code}>
-                                        {item.item_code} - {item.item_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Item Name
-                            </label>
-                            <input
-                                type="text"
-                                value={newPurchase.item_name}
-                                readOnly
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-                                placeholder="Auto-filled"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Cost Per Unit *
-                            </label>
-                            <input
-                                type="number"
-                                value={newPurchase.cost_per_unit}
-                                onChange={(e) => setNewPurchase(prev => ({ ...prev, cost_per_unit: e.target.value ? parseFloat(e.target.value) : '' }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="0.00"
-                                step="0.01"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Quantity *
-                            </label>
-                            <input
-                                type="number"
-                                value={newPurchase.quantity}
-                                onChange={(e) => setNewPurchase(prev => ({ ...prev, quantity: e.target.value ? parseInt(e.target.value) : '' }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="0"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Supplier *
-                            </label>
-                            <input
-                                type="text"
-                                value={newPurchase.supplier}
-                                onChange={(e) => setNewPurchase(prev => ({ ...prev, supplier: e.target.value }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Supplier name"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Total Cost
-                            </label>
-                            <input
-                                type="text"
-                                value={calculateTotalCost().toFixed(2)}
-                                readOnly
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-                            />
-                        </div>
-
-                        <div className="flex items-end">
-                            <button
-                                onClick={handleAddPurchase}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                                <Save size={18} />
-                                Save Purchase
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="overflow-x-auto">
-                <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                        <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Purchase ID
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Item Code
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Item Name
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Cost Per Unit
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Cost
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Purchase Date
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Supplier
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created By
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {loading ? (
-                            <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                                    Loading...
-                                </td>
-                            </tr>
-                        ) : purchases.length === 0 ? (
-                            <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                                    No purchases found
-                                </td>
-                            </tr>
-                        ) : (
-                            purchases.map((purchase) => (
-                                <tr key={purchase.purchase_id} className="hover:bg-gray-50">
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.purchase_id}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.item_code}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.item_name}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.cost_per_unit}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.total_cost}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.purchase_date}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.supplier}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {purchase.created_by}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button className="text-blue-600 hover:text-blue-800">
-                                            <Edit size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-                <div className="text-sm text-gray-500">
-                    Showing {purchases.length} of {purchases.length} results
-                </div>
-                <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-1 px-3 py-2 text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <ChevronLeft size={16} />
-                        Previous
-                    </button>
-                    <button className="px-3 py-2 bg-blue-600 text-white rounded-lg">1</button>
-                    <button className="flex items-center gap-1 px-3 py-2 text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Next
-                        <ChevronRight size={16} />
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -362,13 +149,76 @@ const Dashboard = () => {
                 </div>
 
                 {/* Content */}
-                {activeTab === 'Purchases' && renderPurchasesTable()}
-                {activeTab !== 'Purchases' && (
-                    <div className="bg-white rounded-lg shadow p-8 text-center">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
-                        <p className="text-gray-600">This section is under development</p>
-                    </div>
+                {activeTab === 'Purchases' && (
+                    <PurchasesTable
+                        purchases={purchases}
+                        items={items}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newPurchase={newPurchase}
+                        setShowAddForm={setShowAddForm}
+                        setNewPurchase={setNewPurchase}
+                        handleItemCodeSelect={handleItemCodeSelect}
+                        handleAddPurchase={() => handleAddPurchase(final, setPurchases, setLoading)}
+                    />
                 )}
+
+                {activeTab === 'Items' && (
+                    <ItemsTable
+                        items={items}
+                        loading={loading}
+                        showAddForm={showAddItemForm}
+                        newItem={newItem}
+                        setShowAddForm={setShowAddItemForm}
+                        setNewItem={setNewItem}
+                        handleAddItem={() =>
+                            handleAddItem(newItem, setItems, setLoading)
+                        }
+                    />
+                )}
+
+                {activeTab === 'Farmers' && (
+                    <FarmersTable
+                        farmers={farmers}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newFarmer={newFarmer}
+                        setShowAddForm={setShowAddForm}
+                        setNewFarmer={setNewFarmer}
+                        handleAddFarmer={() => handleAddFarmer(newFarmer, setFarmers, setLoading)}
+                    />
+                )}
+
+                {activeTab === 'Suppliers' && (
+                    <SuppliersTable
+                        suppliers={suppliers}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newSupplier={newSupplier}
+                        setShowAddForm={setShowAddForm}
+                        setNewSupplier={setNewSupplier}
+                        handleAddSupplier={() => handleAddSupplier(newSupplier, setSuppliers, setLoading)}
+                    />
+                )}
+                {activeTab === 'Traders' && (
+                    <TradersTable
+                        traders={traders}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newTrader={newTrader}
+                        setShowAddForm={setShowAddForm}
+                        setNewTrader={setNewTrader}
+                        handleAddTrader={() => handleAddTrader(newTrader, setTraders, setLoading)}
+                    />
+                )}
+
+                {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
+                    activeTab !== 'Traders' && (
+                        <div className="bg-white rounded-lg shadow p-8 text-center">
+                            <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
+                            <p className="text-gray-600">This section is under development</p>
+                        </div>
+                    )}
             </div>
         </div>
     );
