@@ -11,11 +11,12 @@ pub struct Model {
     pub batch_id: i32,
     pub line_id: i32,
     pub supervisor_id: i32,
+    pub farmer_id: i32,
     pub start_date: Date,
-    pub end_date: Date,
+    pub end_date: Date, 
     pub initial_bird_count: i32,
-    pub current_bird_count: i32,
-    pub status: Option<BatchStatus>,
+    pub current_bird_count: Option<i32>,
+    pub status: BatchStatus, 
     pub created_at: DateTimeWithTimeZone,
 }
 
@@ -23,10 +24,13 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::batch_requirements::Entity")]
     BatchRequirements,
+
     #[sea_orm(has_many = "super::bird_count_history::Entity")]
     BirdCountHistory,
+
     #[sea_orm(has_many = "super::bird_sell_history::Entity")]
     BirdSellHistory,
+
     #[sea_orm(
         belongs_to = "super::production_lines::Entity",
         from = "Column::LineId",
@@ -35,6 +39,7 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     ProductionLines,
+
     #[sea_orm(
         belongs_to = "super::users::Entity",
         from = "Column::SupervisorId",
@@ -43,6 +48,15 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Users,
+
+    #[sea_orm(
+        belongs_to = "super::farmers::Entity",
+        from = "Column::FarmerId",
+        to = "super::farmers::Column::FarmerId",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Farmers, // ✅ added relation
 }
 
 impl Related<super::batch_requirements::Entity> for Entity {
@@ -72,6 +86,12 @@ impl Related<super::production_lines::Entity> for Entity {
 impl Related<super::users::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Users.def()
+    }
+}
+
+impl Related<super::farmers::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Farmers.def()
     }
 }
 

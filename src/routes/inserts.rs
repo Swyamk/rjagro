@@ -9,7 +9,7 @@ pub fn insert_routes() -> Router<DatabaseConnection> {
     Router::new()
         .route("/production_lines", post(create_production_line))
         .route("/purchases", post(create_purchase))
-         .route("/items", post(create_item))
+        .route("/items", post(create_item))
         .route("/batches", post(create_batch))
         .route("/batch_requirements", post(create_batch_requirement))
         .route("/batch_allocations", post(create_batch_allocation))

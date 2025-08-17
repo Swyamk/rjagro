@@ -9,7 +9,6 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub allocation_id: i32,
     pub requirement_id: i32,
-    pub purchase_id: i32,
     #[sea_orm(column_type = "Decimal(Some((12, 2)))")]
     pub allocated_qty: Decimal,
     pub allocation_date: Date,
@@ -27,14 +26,6 @@ pub enum Relation {
     )]
     BatchRequirements,
     #[sea_orm(
-        belongs_to = "super::purchases::Entity",
-        from = "Column::PurchaseId",
-        to = "super::purchases::Column::PurchaseId",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Purchases,
-    #[sea_orm(
         belongs_to = "super::users::Entity",
         from = "Column::AllocatedBy",
         to = "super::users::Column::UserId",
@@ -47,12 +38,6 @@ pub enum Relation {
 impl Related<super::batch_requirements::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::BatchRequirements.def()
-    }
-}
-
-impl Related<super::purchases::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Purchases.def()
     }
 }
 

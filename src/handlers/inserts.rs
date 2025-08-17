@@ -1,6 +1,6 @@
 use crate::models::*;
 use axum::{extract::State, http::StatusCode, Json};
-use entity::*;
+use entity::{sea_orm_active_enums::RequirementStatus, *};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
 /// Production Lines
@@ -65,39 +65,50 @@ pub async fn create_batch(
     let new_batch = batches::ActiveModel {
         line_id: Set(payload.line_id),
         supervisor_id: Set(payload.supervisor_id),
+        farmer_id: Set(payload.farmer_id),
         start_date: Set(payload.start_date),
         end_date: Set(payload.end_date),
         initial_bird_count: Set(payload.initial_bird_count),
-        current_bird_count: Set(payload.current_bird_count),
-        status: Set(payload.status),
+        current_bird_count: Set(payload.current_bird_count), 
         ..Default::default()
     };
+
     new_batch
         .insert(&db)
         .await
         .map(Json)
+        .inspect_err(|err| eprintln!("Failed to insert batch: {}", err))
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Batch Requirements
+
 pub async fn create_batch_requirement(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<CreateBatchRequirement>,
 ) -> Result<Json<batch_requirements::Model>, StatusCode> {
     let new_req = batch_requirements::ActiveModel {
         batch_id: Set(payload.batch_id),
-        category: Set(payload.category),
+        line_id: Set(payload.line_id),
+        supervisor_id: Set(payload.supervisor_id),
+        item_code: Set(payload.item_code.clone()),
         quantity: Set(payload.quantity),
-        unit: Set(payload.unit),
         request_date: Set(payload.request_date),
+        // 👇 ensure status is always set
+        status: Set(RequirementStatus::Pending),
         ..Default::default()
     };
-    new_req
-        .insert(&db)
-        .await
-        .map(Json)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+
+    match new_req.insert(&db).await {
+        Ok(model) => Ok(Json(model)),
+
+        Err(e) => {
+            eprintln!("❌ Failed to insert batch requirement: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
+    }
 }
+
 
 /// Batch Allocations
 pub async fn create_batch_allocation(
@@ -106,12 +117,12 @@ pub async fn create_batch_allocation(
 ) -> Result<Json<batch_allocations::Model>, StatusCode> {
     let new_alloc = batch_allocations::ActiveModel {
         requirement_id: Set(payload.requirement_id),
-        purchase_id: Set(payload.purchase_id),
         allocated_qty: Set(payload.allocated_qty),
         allocation_date: Set(payload.allocation_date),
         allocated_by: Set(payload.allocated_by),
         ..Default::default()
     };
+
     new_alloc
         .insert(&db)
         .await

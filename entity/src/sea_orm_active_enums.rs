@@ -55,3 +55,14 @@ pub enum UserRole {
     #[sea_orm(string_value = "accountant")]
     Accountant,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "requirement_status")]
+pub enum RequirementStatus {
+    #[sea_orm(string_value = "accept")]
+    Accept,
+    #[sea_orm(string_value = "decline")]
+    Decline,
+    #[sea_orm(string_value = "pending")]
+    Pending,
+}

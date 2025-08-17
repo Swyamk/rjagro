@@ -63,6 +63,18 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+        manager
+            .create_type(
+                Type::create()
+                    .as_enum(RequirementStatus::Table)
+                    .values([
+                        RequirementStatus::Accept,
+                        RequirementStatus::Decline,
+                        RequirementStatus::Pending,
+                    ])
+                    .to_owned(),
+            )
+            .await?;
 
         // Create users table
         manager
@@ -152,6 +164,28 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        // Create farmers table
+        manager
+            .create_table(
+                Table::create()
+                    .table(Farmers::Table)
+                    .if_not_exists()
+                    .col(pk_auto(Farmers::FarmerId))
+                    .col(string_len(Farmers::Name, 100).not_null())
+                    .col(string_len(Farmers::PhoneNumber, 15).not_null().unique_key())
+                    .col(text(Farmers::Address).not_null())
+                    .col(string_len(Farmers::BankAccountNo, 30).not_null())
+                    .col(string_len(Farmers::BankName, 100).not_null())
+                    .col(string_len(Farmers::IfscCode, 15).not_null())
+                    .col(decimal_len(Farmers::AreaSize, 10, 2))
+                    .col(
+                        timestamp_with_time_zone(Farmers::CreatedAt)
+                            .default(Expr::current_timestamp()),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
         // Create batches table
         manager
             .create_table(
@@ -161,6 +195,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(Batches::BatchId))
                     .col(integer(Batches::LineId).not_null())
                     .col(integer(Batches::SupervisorId).not_null())
+                    .col(integer(Batches::FarmerId).not_null())
                     .col(date(Batches::StartDate).not_null())
                     .col(date(Batches::EndDate))
                     .col(integer(Batches::InitialBirdCount).not_null())
@@ -186,6 +221,12 @@ impl MigrationTrait for Migration {
                             .from(Batches::Table, Batches::SupervisorId)
                             .to(Users::Table, Users::UserId),
                     )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_batches_farmer")
+                            .from(Batches::Table, Batches::FarmerId)
+                            .to(Farmers::Table, Farmers::FarmerId),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -198,19 +239,40 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_auto(BatchRequirements::RequirementId))
                     .col(integer(BatchRequirements::BatchId).not_null())
+                    .col(integer(BatchRequirements::LineId).not_null())
+                    .col(integer(BatchRequirements::SupervisorId).not_null())
+                    .col(string_len(BatchRequirements::ItemCode, 100).not_null())
+                    .col(decimal_len(BatchRequirements::Quantity, 12, 2).not_null())
                     .col(
-                        ColumnDef::new(BatchRequirements::Category)
-                            .custom(RequirementCategory::Table)
+                        ColumnDef::new(BatchRequirements::Status)
+                            .custom(RequirementStatus::Table)
+                            .default("pending")
                             .not_null(),
                     )
-                    .col(decimal_len(BatchRequirements::Quantity, 12, 2).not_null())
-                    .col(string_len(BatchRequirements::Unit, 50))
                     .col(date(BatchRequirements::RequestDate).not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_batch_requirements_batch")
                             .from(BatchRequirements::Table, BatchRequirements::BatchId)
                             .to(Batches::Table, Batches::BatchId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_batch_requirements_item")
+                            .from(BatchRequirements::Table, BatchRequirements::ItemCode)
+                            .to(Items::Table, Items::ItemCode),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_batch_requirements_line")
+                            .from(BatchRequirements::Table, BatchRequirements::LineId)
+                            .to(ProductionLines::Table, ProductionLines::LineId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_batch_requirements_supervisor")
+                            .from(BatchRequirements::Table, BatchRequirements::SupervisorId)
+                            .to(Users::Table, Users::UserId),
                     )
                     .to_owned(),
             )
@@ -224,7 +286,6 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_auto(BatchAllocations::AllocationId))
                     .col(integer(BatchAllocations::RequirementId).not_null())
-                    .col(integer(BatchAllocations::PurchaseId).not_null())
                     .col(decimal_len(BatchAllocations::AllocatedQty, 12, 2).not_null())
                     .col(date(BatchAllocations::AllocationDate).not_null())
                     .col(integer(BatchAllocations::AllocatedBy).not_null())
@@ -236,37 +297,9 @@ impl MigrationTrait for Migration {
                     )
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk_batch_allocations_purchase")
-                            .from(BatchAllocations::Table, BatchAllocations::PurchaseId)
-                            .to(Purchases::Table, Purchases::PurchaseId),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
                             .name("fk_batch_allocations_user")
                             .from(BatchAllocations::Table, BatchAllocations::AllocatedBy)
                             .to(Users::Table, Users::UserId),
-                    )
-                    .to_owned(),
-            )
-            .await?;
-
-        // Create farmers table
-        manager
-            .create_table(
-                Table::create()
-                    .table(Farmers::Table)
-                    .if_not_exists()
-                    .col(pk_auto(Farmers::FarmerId))
-                    .col(string_len(Farmers::Name, 100).not_null())
-                    .col(string_len(Farmers::PhoneNumber, 15).not_null().unique_key())
-                    .col(text(Farmers::Address).not_null())
-                    .col(string_len(Farmers::BankAccountNo, 30).not_null())
-                    .col(string_len(Farmers::BankName, 100).not_null())
-                    .col(string_len(Farmers::IfscCode, 15).not_null())
-                    .col(decimal_len(Farmers::AreaSize, 10, 2))
-                    .col(
-                        timestamp_with_time_zone(Farmers::CreatedAt)
-                            .default(Expr::current_timestamp()),
                     )
                     .to_owned(),
             )
@@ -460,6 +493,10 @@ impl MigrationTrait for Migration {
             .drop_type(Type::drop().name(UserRole::Table).to_owned())
             .await?;
 
+        manager
+            .drop_type(Type::drop().name(RequirementStatus::Table).to_owned())
+            .await?;
+
         Ok(())
     }
 }
@@ -541,6 +578,7 @@ enum Batches {
     BatchId,
     LineId,
     SupervisorId,
+    FarmerId,
     StartDate,
     EndDate,
     InitialBirdCount,
@@ -554,9 +592,11 @@ enum BatchRequirements {
     Table,
     RequirementId,
     BatchId,
-    Category,
+    LineId,
+    SupervisorId,
+    ItemCode,
     Quantity,
-    Unit,
+    Status,
     RequestDate,
 }
 
@@ -565,7 +605,6 @@ enum BatchAllocations {
     Table,
     AllocationId,
     RequirementId,
-    PurchaseId,
     AllocatedQty,
     AllocationDate,
     AllocatedBy,
@@ -644,4 +683,12 @@ enum Items {
     ItemCode, // string PK
     ItemName,
     Unit,
+}
+
+#[derive(DeriveIden)]
+enum RequirementStatus {
+    Table,
+    Accept,
+    Decline,
+    Pending,
 }

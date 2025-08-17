@@ -1,9 +1,11 @@
 use chrono::NaiveDate;
 use entity::sea_orm_active_enums::{
-    BatchStatus, RequirementCategory, SupplierType,
+    BatchStatus, RequirementStatus, SupplierType, UserRole
 };
-use sea_orm::prelude::Decimal;
+use sea_orm::prelude::{DateTimeWithTimeZone, Decimal};
 use serde::{Deserialize, Serialize};
+use sea_orm::FromQueryResult;
+
 
 #[derive(Serialize)]
 pub struct PurchaseWithItem {
@@ -43,30 +45,31 @@ pub struct CreatePurchase {
 pub struct CreateBatch {
     pub line_id: i32,
     pub supervisor_id: i32,
+    pub farmer_id: i32, 
     pub start_date: chrono::NaiveDate,
-    pub end_date: chrono::NaiveDate,
+    pub end_date: chrono::NaiveDate, 
     pub initial_bird_count: i32,
-    pub current_bird_count: i32,
-    pub status: Option<BatchStatus>,
+    pub current_bird_count: Option<i32>,    
 }
 
 #[derive(Deserialize)]
 pub struct CreateBatchRequirement {
     pub batch_id: i32,
-    pub category: RequirementCategory,
+    pub line_id: i32,
+    pub supervisor_id: i32,
+    pub item_code: String, 
     pub quantity: Decimal,
-    pub unit: String,
     pub request_date: chrono::NaiveDate,
 }
 
 #[derive(Deserialize)]
 pub struct CreateBatchAllocation {
     pub requirement_id: i32,
-    pub purchase_id: i32,
     pub allocated_qty: Decimal,
     pub allocation_date: chrono::NaiveDate,
     pub allocated_by: i32,
 }
+
 
 #[derive(Deserialize)]
 pub struct CreateFarmer {
@@ -119,4 +122,53 @@ pub struct CreateBirdSellHistory {
     pub price_per_bird: Decimal,
     pub total_amount: Decimal,
     pub notes: String,
+}
+
+#[derive(Serialize)]
+pub struct ProductionLineWithSupervisor {
+    pub line_id: i32,
+    pub line_name: String,
+    pub supervisor_id: i32,
+    pub supervisor_name: String,
+    pub created_at: DateTimeWithTimeZone,
+}
+
+#[derive(Serialize)]
+pub struct UserSimplified {
+    pub user_id: i32,
+    pub name: String,
+    pub role: UserRole,
+}
+
+#[derive(Debug, Serialize,FromQueryResult)]
+pub struct BatchResponse {
+    pub batch_id: i32,
+    pub line_id: i32,
+    pub supervisor_id: i32,
+    pub supervisor_name: String,
+    pub farmer_id: i32,
+    pub farmer_name: String,
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub initial_bird_count: i32,
+    pub current_bird_count: Option<i32>,
+    pub status: BatchStatus,
+    pub created_at: DateTimeWithTimeZone,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BatchRequirementResponse {
+    pub requirement_id: i32,
+    pub line_id: i32,
+    pub line_name: Option<String>,
+    pub batch_id: i32,
+    pub supervisor_name: Option<String>,
+    pub farmer_name: Option<String>,
+    pub item_code: String,
+    pub item_name: Option<String>,
+    pub item_unit: Option<String>,
+    pub quantity: Decimal,
+    pub status: RequirementStatus,               
+    pub request_date: NaiveDate,
+    
 }
