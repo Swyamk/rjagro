@@ -11,6 +11,13 @@ import { fetchSuppliers, handleAddSupplier } from '../api/supplier';
 import SuppliersTable from '../components/tables/suppliers';
 import { fetchTraders, handleAddTrader } from '../api/traders';
 import TradersTable from '../components/tables/traders';
+import { fetchProductionLines, handleAddProductionLine } from '../api/production_line';
+import ProductionLinesTable from '../components/tables/production_lines';
+import { fetchSupervisors } from '../api/supervisors';
+import { fetchBatches, handleAddBatch } from '../api/batches';
+import BatchesTable from '../components/tables/batches';
+import { fetchBatchRequirements, handleAddBatchRequirement } from '../api/batch_requirements';
+import BatchRequirementsTable from '../components/tables/batch_requirements';
 
 export enum SupplierType {
     Feed = 'Feed',
@@ -88,6 +95,42 @@ const Dashboard = () => {
         area: ''
     });
 
+    // Production Lines state
+    const [productionLines, setProductionLines] = useState<ProductionLine[]>([]);
+    const [newProductionLine, setNewProductionLine] = useState<ProductionLinePayload>({
+        line_name: '',
+        supervisor_id: 0,
+    });
+
+    const [supervisors, setSupervisors] = useState<SupervisorSimplified[]>([]);
+    const finalProductionLine: ProductionLinePayload = {
+        line_name: newProductionLine.line_name,
+        supervisor_id: Number(newProductionLine.supervisor_id),
+    };
+
+    // Batches state
+    const [batches, setBatches] = useState<Batch[]>([]);
+    const [newBatch, setNewBatch] = useState<BatchPayload>({
+        line_id: '',
+        supervisor_id: '',
+        farmer_id: '',
+        start_date: new Date().toISOString().slice(0, 10),
+        end_date: new Date().toISOString().slice(0, 10),
+        initial_bird_count: '',
+        current_bird_count: ''
+    });
+
+    // Requirements state
+    const [requirements, setRequirements] = useState<BatchRequirement[]>([]);
+    const [newRequirement, setNewRequirement] = useState<NewBatchRequirement>({
+        batch_id: '',
+        line_id: '',
+        farmer_id: '',
+        supervisor_id: '',
+        item_code: '',
+        quantity: ''
+    });
+
 
     const tabs = [
         'Users', 'Production Lines', 'Purchases', 'Items', 'Batches', 'Batch Requirements',
@@ -112,6 +155,25 @@ const Dashboard = () => {
         if (activeTab === 'Traders') {
             fetchTraders(setTraders, setLoading);
         }
+        if (activeTab === 'Production Lines') {
+            fetchProductionLines(setProductionLines, setLoading);
+            fetchSupervisors(setSupervisors, setLoading);
+        }
+        if (activeTab === 'Batches') {
+            fetchBatches(setBatches, setLoading);
+            fetchFarmers(setFarmers, setLoading);
+            fetchSupervisors(setSupervisors, setLoading);
+        }
+        if (activeTab === 'Batch Requirements') {
+            console.log("heeelo");
+            fetchBatchRequirements(setRequirements, setLoading);
+            fetchItems(setItems);
+            fetchFarmers(setFarmers);
+            fetchSupervisors(setSupervisors);
+            fetchBatches(setBatches)
+            fetchProductionLines(setProductionLines);
+        }
+
     }, [activeTab]);
 
     const handleItemCodeSelect = (itemCode: string) => {
@@ -147,6 +209,21 @@ const Dashboard = () => {
                         </button>
                     ))}
                 </div>
+
+                {activeTab === 'Production Lines' && (
+                    <ProductionLinesTable
+                        productionLines={productionLines}
+                        supervisors={supervisors}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newProductionLine={newProductionLine}
+                        setShowAddForm={setShowAddForm}
+                        setNewProductionLine={setNewProductionLine}
+                        handleAddProductionLine={() =>
+                            handleAddProductionLine(finalProductionLine, setProductionLines, setLoading)
+                        }
+                    />
+                )}
 
                 {/* Content */}
                 {activeTab === 'Purchases' && (
@@ -212,8 +289,42 @@ const Dashboard = () => {
                     />
                 )}
 
+                {activeTab === 'Batches' && (
+                    <BatchesTable
+                        batches={batches}
+                        farmers={farmers}
+                        supervisors={supervisors}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newBatch={newBatch}
+                        setShowAddForm={setShowAddForm}
+                        setNewBatch={setNewBatch}
+                        handleAddBatch={() => handleAddBatch(newBatch as BatchPayload, setBatches, setLoading)}
+                    />
+                )}
+
+                {activeTab === 'Batch Requirements' && (
+                    <BatchRequirementsTable
+                        requirements={requirements}
+                        batches={batches}
+                        lines={productionLines}
+                        farmers={farmers}
+                        supervisors={supervisors}
+                        items={items}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newRequirement={newRequirement}
+                        setShowAddForm={setShowAddForm}
+                        setNewRequirement={setNewRequirement}
+                        handleAddRequirement={() => handleAddBatchRequirement(newRequirement, setRequirements, setLoading)}
+                    />
+                )}
+
                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
-                    activeTab !== 'Traders' && (
+                    activeTab !== 'Traders' &&
+                    activeTab !== 'Production Lines' &&
+                    activeTab !== 'Batches' && 
+                     activeTab !== 'Batch Requirements' &&(
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
                             <p className="text-gray-600">This section is under development</p>

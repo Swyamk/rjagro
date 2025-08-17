@@ -94,3 +94,71 @@ interface NewTrader {
   ifsc_code: string;
   area: string;
 }
+
+interface ProductionLine {
+  line_id: number;
+  line_name: string;
+  supervisor_id: number;
+  supervisor_name: string;
+  created_at: string; 
+}
+
+interface ProductionLinePayload {
+  line_name: string;
+  supervisor_id: number | '';
+}
+
+interface SupervisorSimplified {
+    user_id: number;
+    name: string;
+    role: string;
+}
+
+interface Batch {
+  batch_id: number;
+  line_id: number;
+  supervisor_id: number;
+  supervisor_name: string;
+  farmer_id: number;
+  farmer_name: string;
+  start_date: string;
+  end_date: string;
+  initial_bird_count: number;
+  current_bird_count: number;
+  status: string;
+  created_at: string;
+}
+
+interface BatchPayload {
+  line_id: number | '';
+  supervisor_id: number | '';
+  farmer_id: number | '';
+  start_date: string;
+  end_date: string;
+  initial_bird_count: number | '';
+  current_bird_count: number | '';
+}
+
+interface BatchRequirement {
+  requirement_id: number;
+  line_id: number;
+  line_name: string;
+  batch_id: number;
+  supervisor_name: string;
+  farmer_name: string;
+  item_code: string;
+  item_name: string;
+  item_unit: string;
+  quantity: string;
+  status: string;
+  request_date: string;
+}
+
+interface NewBatchRequirement {
+  batch_id: number | '';
+  line_id: number | '';
+  farmer_id: number | '';
+  supervisor_id: number | '';
+  item_code: string;
+  quantity: number | '';
+}
