@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, X, Save, Check, XCircle, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { handleApproveRequirement, handleRejectRequirement } from '@/app/api/batch_requirements';
 import { useAuth } from '@/app/hooks/useAuth';
@@ -37,9 +37,41 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
   const [rejectModalRequirement, setRejectModalRequirement] = useState<BatchRequirement | null>(null);
   const [allocatedQty, setAllocatedQty] = useState<string>('');
   const [processingRequirement, setProcessingRequirement] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const { user } = useAuth();
 
   const isAdmin = user?.role === 'Admin';
+
+  // Filter and sort requirements: pending first, then others by date (newest first, older last)
+  const filteredAndSortedRequirements = useMemo(() => {
+    let filtered = requirements;
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = requirements.filter(r => r.status?.toLowerCase() === statusFilter.toLowerCase());
+    }
+    
+    // Sort the filtered results
+    return [...filtered].sort((a, b) => {
+      const aStatus = a.status?.toLowerCase();
+      const bStatus = b.status?.toLowerCase();
+      
+      // If one is pending and other is not, pending comes first
+      if (aStatus === 'pending' && bStatus !== 'pending') return -1;
+      if (bStatus === 'pending' && aStatus !== 'pending') return 1;
+      
+      // If both are pending or both are non-pending, sort by date (newest first)
+      const aDate = new Date(a.request_date);
+      const bDate = new Date(b.request_date);
+      return bDate.getTime() - aDate.getTime();
+    });
+  }, [requirements, statusFilter]);
+
+  // Get unique statuses for filter dropdown
+  const availableStatuses = useMemo(() => {
+    const statuses = [...new Set(requirements.map(r => r.status?.toLowerCase()).filter(Boolean))];
+    return statuses.sort();
+  }, [requirements]);
 
   const getStatusBadge = (status: string) => {
     const baseClasses = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium";
@@ -54,7 +86,7 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
         );
       case 'approved':
         return (
-          <span className={`${baseClasses} bg-emerald-50 text-emerald-700 border border-emerald-200`}>
+          <span className={`${baseClasses} bg-green-50 text-green-700 border border-green-200`}>
             <CheckCircle2 size={12} />
             Approved
           </span>
@@ -104,17 +136,17 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
           onClick={() => handleApproveClick(requirement)}
           disabled={isProcessing}
           className="group relative inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg
-                   bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800
-                   border border-emerald-200 hover:border-emerald-300
+                   bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800
+                   border border-green-200 hover:border-green-300
                    disabled:opacity-50 disabled:cursor-not-allowed
                    transition-all duration-200 ease-in-out
-                   focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1
+                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1
                    hover:shadow-sm active:scale-95"
           title="Approve requirement"
         >
           <div className="flex items-center gap-1.5">
             {isProcessing ? (
-              <div className="w-3 h-3 border border-emerald-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-3 h-3 border border-green-600 border-t-transparent rounded-full animate-spin" />
             ) : (
               <Check size={12} className="group-hover:scale-110 transition-transform duration-200" />
             )}
@@ -151,7 +183,34 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-xl font-semibold text-gray-800">Batch Requirements</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold text-gray-800">Batch Requirements</h2>
+          
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Filter by Status:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+            >
+              <option value="all">All Status</option>
+              {availableStatuses.map(status => (
+                <option key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Show filtered count */}
+          {statusFilter !== 'all' && (
+            <span className="text-sm text-gray-500">
+              ({filteredAndSortedRequirements.length} of {requirements.length} requirements)
+            </span>
+          )}
+        </div>
+        
         <button
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -298,10 +357,12 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr><td colSpan={isAdmin ? 10 : 9} className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-            ) : requirements.length === 0 ? (
-              <tr><td colSpan={isAdmin ? 10 : 9} className="px-4 py-8 text-center text-gray-500">No requirements found</td></tr>
+            ) : filteredAndSortedRequirements.length === 0 ? (
+              <tr><td colSpan={isAdmin ? 10 : 9} className="px-4 py-8 text-center text-gray-500">
+                {statusFilter !== 'all' ? `No ${statusFilter} requirements found` : 'No requirements found'}
+              </td></tr>
             ) : (
-              requirements.map((r) => (
+              filteredAndSortedRequirements.map((r) => (
                 <tr key={r.requirement_id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{r.requirement_id}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{r.line_name}</td>
@@ -330,8 +391,8 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <Check className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Check className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -369,7 +430,7 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
                     type="number"
                     value={allocatedQty}
                     onChange={(e) => setAllocatedQty(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                     placeholder="Enter quantity to allocate"
                     min="0"
                     max={approveModalRequirement.quantity}
@@ -406,7 +467,7 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
                   }
                 }}
                 disabled={!allocatedQty || parseInt(allocatedQty) <= 0}
-                className="px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
+                className="px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <Check size={16} />

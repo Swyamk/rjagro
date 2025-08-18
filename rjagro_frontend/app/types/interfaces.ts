@@ -162,3 +162,17 @@ interface NewBatchRequirement {
   item_code: string;
   quantity: number | '';
 }
+
+interface BatchAllocation {
+  allocation_id: number;
+  requirement_id: number;
+  allocated_qty: string;
+  allocation_date: string;
+  allocated_by: number;
+}
+
+interface NewBatchAllocation {
+  requirement_id: number | '';
+  allocated_qty: number | '';
+  allocated_by: number | '';
+}

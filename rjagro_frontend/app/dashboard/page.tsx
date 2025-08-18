@@ -18,6 +18,8 @@ import { fetchBatches, handleAddBatch } from '../api/batches';
 import BatchesTable from '../components/tables/batches';
 import { fetchBatchRequirements, handleAddBatchRequirement } from '../api/batch_requirements';
 import BatchRequirementsTable from '../components/tables/batch_requirements';
+import { fetchBatchAllocations } from '../api/batch_allocations';
+import BatchAllocationsTable from '../components/tables/batch_allocations';
 
 export enum SupplierType {
     Feed = 'Feed',
@@ -131,6 +133,13 @@ const Dashboard = () => {
         quantity: ''
     });
 
+    // Batch Allocations state
+    const [batchAllocations, setBatchAllocations] = useState<BatchAllocation[]>([]);
+    const [newBatchAllocation, setNewBatchAllocation] = useState<NewBatchAllocation>({
+        requirement_id: '',
+        allocated_qty: '',
+        allocated_by: ''
+    });
 
     const tabs = [
         'Users', 'Production Lines', 'Purchases', 'Items', 'Batches', 'Batch Requirements',
@@ -172,6 +181,9 @@ const Dashboard = () => {
             fetchSupervisors(setSupervisors);
             fetchBatches(setBatches)
             fetchProductionLines(setProductionLines);
+        }
+        if (activeTab === 'Batch Allocations') {
+            fetchBatchAllocations(setBatchAllocations, setLoading);
         }
 
     }, [activeTab]);
@@ -320,11 +332,21 @@ const Dashboard = () => {
                     />
                 )}
 
+                {activeTab === 'Batch Allocations' && (
+                    <BatchAllocationsTable
+                        batchAllocations={batchAllocations}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        setShowAddForm={setShowAddForm}
+                    />
+                )}
+
                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
                     activeTab !== 'Traders' &&
                     activeTab !== 'Production Lines' &&
-                    activeTab !== 'Batches' && 
-                     activeTab !== 'Batch Requirements' &&(
+                    activeTab !== 'Batches' &&
+                    activeTab !== 'Batch Requirements' &&
+                    activeTab !== 'Batch Allocations' &&  (
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
                             <p className="text-gray-600">This section is under development</p>

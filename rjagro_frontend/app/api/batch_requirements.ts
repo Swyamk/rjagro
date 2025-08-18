@@ -46,27 +46,24 @@ export const handleAddBatchRequirement = async (
 
 export const handleRejectRequirement = async (requirement_id: number) => {
   try {
-    const payload = {
-      requirement_id: requirement_id,
-    };
-
-    await api.post('/reject/batch_requirement', payload);
+    await api.put(`admin/decline_batch_requirement/${requirement_id}`);
     toast.success(`Requirement #${requirement_id} rejected!`);
   } catch (error) {
-    console.error('Error rejecting requirement:', error);
-    toast.error('Error rejecting requirement');
+    console.error("Error rejecting requirement:", error);
+    toast.error("Error rejecting requirement");
   }
 };
-export const handleApproveRequirement = async (requirement: BatchRequirement, allocatedQty: number) => {
+
+export const handleApproveRequirement = async (requirement: BatchRequirement, allocatedQty: number,user_id?:number) => {
   try {
     const payload = {
       requirement_id: requirement.requirement_id,
       allocated_qty: allocatedQty,
       allocation_date: new Date().toISOString().slice(0, 10),
-      allocated_by: 1, // TODO: replace with logged-in user ID
+      allocated_by: user_id || 1, // Default to 1 if user_id is not provided
     };
 
-    await api.post('/approve/batch_requirement', payload);
+    await api.post('/admin/approve_batch_requirement', payload);
     toast.success(`Requirement #${requirement.requirement_id} approved!`);
   } catch (error) {
     console.error('Error approving requirement:', error);
