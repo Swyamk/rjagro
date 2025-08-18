@@ -1,17 +1,14 @@
 import api from '../utils/api';
 
-export const fetchItems = async (setItems: (data: any) => void) => {
+export const fetchItems = async (): Promise<Item[]> => {
     console.log('Fetching items...');
-    try {
-        const response = await api.get('/getall/items');
-        setItems(response.data);
-    } catch (error) {
-        console.error('Error fetching items:', error);
-    }
+    const response = await api.get('/getall/items');
+    return response.data;
 };
+
 export const handleAddItem = async (
     item: Item,
-    setItems: (data: any) => void,
+    queryClient: any, 
     setLoading: (loading: boolean) => void
 ) => {
     try {
@@ -21,8 +18,9 @@ export const handleAddItem = async (
             item_name: item.item_name,
             unit: item.unit.trim() === '' ? null : item.unit,
         });
-        // refresh after insert
-        fetchItems(setItems);
+
+        // Invalidate cache -> refetch items automatically
+        queryClient.invalidateQueries(['items']);
     } catch (error) {
         console.error('Error adding item:', error);
     } finally {

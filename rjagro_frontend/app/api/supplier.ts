@@ -1,32 +1,35 @@
 import api from "../utils/api";
-
-export const fetchSuppliers = async (setSuppliers: (data: Supplier[]) => void, setLoading?: (loading: boolean) => void) => {
-  try {
-    if (setLoading) setLoading(true);
-    const response = await api.get('/getall/suppliers');
-    setSuppliers(response.data);
-  } catch (error) {
-    console.error('Error fetching suppliers:', error);
-  } finally {
-    if (setLoading) setLoading(false);
-  }
+import { toast } from "react-toastify";
+export const fetchSuppliers = async (): Promise<Supplier[]> => {
+  const response = await api.get('/getall/suppliers');
+  return response.data;
 };
+
 
 export const handleAddSupplier = async (
   payload: SupplierPayload,
-  setSuppliers: (data: Supplier[]) => void,
-  setLoading?: (loading: boolean) => void
+  queryClient: any,
+  setLoading: (loading: boolean) => void
 ) => {
+  if (!payload.name || !payload.supplier_type) {
+    toast.error("Please fill in all required fields");
+    return;
+  }
+
+  setLoading(true);
+  toast.info("Adding supplier...");
+
   try {
-    if (setLoading) setLoading(true);
     await api.post('/insert/suppliers', payload);
 
-    // Refresh list
-    const response = await api.get('/getall/suppliers');
-    setSuppliers(response.data);
+    // Invalidate cache -> triggers auto-refetch
+    queryClient.invalidateQueries(['suppliers']);
+
+    toast.success("Supplier added successfully!");
   } catch (error) {
-    console.error('Error adding supplier:', error);
+    console.error("Error adding supplier:", error);
+    toast.error("Error adding supplier");
   } finally {
-    if (setLoading) setLoading(false);
+    setLoading(false);
   }
 };

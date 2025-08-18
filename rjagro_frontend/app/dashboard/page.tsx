@@ -20,6 +20,7 @@ import { fetchBatchRequirements, handleAddBatchRequirement } from '../api/batch_
 import BatchRequirementsTable from '../components/tables/batch_requirements';
 import { fetchBatchAllocations } from '../api/batch_allocations';
 import BatchAllocationsTable from '../components/tables/batch_allocations';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export enum SupplierType {
     Feed = 'Feed',
@@ -29,9 +30,15 @@ export enum SupplierType {
 
 const Dashboard = () => {
     const { user } = useAuth();
+    const queryClient = useQueryClient();
+
 
     const [activeTab, setActiveTab] = useState('Purchases');
-    const [purchases, setPurchases] = useState<Purchase[]>([]);
+    const { data: purchases = [], isLoading: loadingPurchases } = useQuery({
+        queryKey: ['purchases'],
+        queryFn: fetchPurchases,
+        staleTime: 5 * 60 * 1000,
+    });
     const [loading, setLoading] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [newPurchase, setNewPurchase] = useState<NewPurchase>({
@@ -53,7 +60,11 @@ const Dashboard = () => {
     };
 
     // items
-    const [items, setItems] = useState<Item[]>([]);
+    const { data: items = [], isLoading: loadingItems } = useQuery({
+        queryKey: ['items'],
+        queryFn: fetchItems,
+        staleTime: 5 * 60 * 1000, // 5 minutes cache
+    });
     const [newItem, setNewItem] = useState<Item>({
         item_code: '',
         item_name: '',
@@ -62,7 +73,11 @@ const Dashboard = () => {
     const [showAddItemForm, setShowAddItemForm] = useState(false);
 
     // Farmers state
-    const [farmers, setFarmers] = useState<Farmer[]>([]);
+    const { data: farmers = [], isLoading: loadingFarmers } = useQuery({
+        queryKey: ["farmers"],
+        queryFn: fetchFarmers,
+        staleTime: 5 * 60 * 1000,
+    });
     const [newFarmer, setNewFarmer] = useState<NewFarmer>({
         name: '',
         phone_number: '',
@@ -74,7 +89,11 @@ const Dashboard = () => {
     });
 
     //Suppliers state
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const { data: suppliers = [], isLoading: loadingSuppliers } = useQuery({
+        queryKey: ['suppliers'],
+        queryFn: fetchSuppliers,
+        staleTime: 5 * 60 * 1000, // cache 5 min
+    });
     const [newSupplier, setNewSupplier] = useState<SupplierPayload>({
         supplier_type: SupplierType.Chick,
         name: '',
@@ -86,7 +105,12 @@ const Dashboard = () => {
     });
 
     // Traders state
-    const [traders, setTraders] = useState<Trader[]>([]);
+    const { data: traders = [], isLoading: loadingTraders } = useQuery({
+        queryKey: ['traders'],
+        queryFn: fetchTraders,
+        staleTime: 5 * 60 * 1000, // cache for 5 minutes
+    });
+
     const [newTrader, setNewTrader] = useState<NewTrader>({
         name: '',
         phone_number: '',
@@ -98,20 +122,34 @@ const Dashboard = () => {
     });
 
     // Production Lines state
-    const [productionLines, setProductionLines] = useState<ProductionLine[]>([]);
     const [newProductionLine, setNewProductionLine] = useState<ProductionLinePayload>({
         line_name: '',
         supervisor_id: 0,
     });
 
-    const [supervisors, setSupervisors] = useState<SupervisorSimplified[]>([]);
+    const { data: productionLines = [], isLoading: loadingProductionLines } = useQuery({
+        queryKey: ['production_lines'],
+        queryFn: fetchProductionLines,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const { data: supervisors = [], isLoading: loadingSupervisors } = useQuery({
+        queryKey: ['supervisors'],
+        queryFn: fetchSupervisors,
+        staleTime: 5 * 60 * 1000,
+    });
     const finalProductionLine: ProductionLinePayload = {
         line_name: newProductionLine.line_name,
         supervisor_id: Number(newProductionLine.supervisor_id),
     };
 
     // Batches state
-    const [batches, setBatches] = useState<Batch[]>([]);
+    const { data: batches = [], isLoading: loadingBatches } = useQuery({
+        queryKey: ["batches"],
+        queryFn: fetchBatches,
+        staleTime: 5 * 60 * 1000,
+    });
+
     const [newBatch, setNewBatch] = useState<BatchPayload>({
         line_id: '',
         supervisor_id: '',
@@ -123,7 +161,11 @@ const Dashboard = () => {
     });
 
     // Requirements state
-    const [requirements, setRequirements] = useState<BatchRequirement[]>([]);
+    const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
+        queryKey: ["batch_requirements"],
+        queryFn: fetchBatchRequirements,
+        staleTime: 5 * 60 * 1000,
+    });
     const [newRequirement, setNewRequirement] = useState<NewBatchRequirement>({
         batch_id: '',
         line_id: '',
@@ -134,11 +176,10 @@ const Dashboard = () => {
     });
 
     // Batch Allocations state
-    const [batchAllocations, setBatchAllocations] = useState<BatchAllocation[]>([]);
-    const [newBatchAllocation, setNewBatchAllocation] = useState<NewBatchAllocation>({
-        requirement_id: '',
-        allocated_qty: '',
-        allocated_by: ''
+    const { data: allocations = [], isLoading: loadingAllocations } = useQuery({
+        queryKey: ["batch_allocations"],
+        queryFn: fetchBatchAllocations,
+        staleTime: 5 * 60 * 1000,
     });
 
     const tabs = [
@@ -146,47 +187,7 @@ const Dashboard = () => {
         'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
     ];
 
-    useEffect(() => {
-        // Load items first (needed for dropdown)
-        fetchItems(setItems);
-        if (activeTab === 'Purchases') {
-            fetchPurchases(setPurchases, setLoading);
-        }
-        if (activeTab === 'Items') {
-            fetchItems(setItems);
-        }
-        if (activeTab === 'Farmers') {
-            fetchFarmers(setFarmers, setLoading);
-        }
-        if (activeTab === 'Suppliers') {
-            fetchSuppliers(setSuppliers, setLoading);
-        }
-        if (activeTab === 'Traders') {
-            fetchTraders(setTraders, setLoading);
-        }
-        if (activeTab === 'Production Lines') {
-            fetchProductionLines(setProductionLines, setLoading);
-            fetchSupervisors(setSupervisors, setLoading);
-        }
-        if (activeTab === 'Batches') {
-            fetchBatches(setBatches, setLoading);
-            fetchFarmers(setFarmers, setLoading);
-            fetchSupervisors(setSupervisors, setLoading);
-        }
-        if (activeTab === 'Batch Requirements') {
-            console.log("heeelo");
-            fetchBatchRequirements(setRequirements, setLoading);
-            fetchItems(setItems);
-            fetchFarmers(setFarmers);
-            fetchSupervisors(setSupervisors);
-            fetchBatches(setBatches)
-            fetchProductionLines(setProductionLines);
-        }
-        if (activeTab === 'Batch Allocations') {
-            fetchBatchAllocations(setBatchAllocations, setLoading);
-        }
 
-    }, [activeTab]);
 
     const handleItemCodeSelect = (itemCode: string) => {
         const selectedItem = items.find(item => item.item_code === itemCode);
@@ -232,7 +233,7 @@ const Dashboard = () => {
                         setShowAddForm={setShowAddForm}
                         setNewProductionLine={setNewProductionLine}
                         handleAddProductionLine={() =>
-                            handleAddProductionLine(finalProductionLine, setProductionLines, setLoading)
+                            handleAddProductionLine(finalProductionLine, queryClient, setLoading)
                         }
                     />
                 )}
@@ -248,7 +249,9 @@ const Dashboard = () => {
                         setShowAddForm={setShowAddForm}
                         setNewPurchase={setNewPurchase}
                         handleItemCodeSelect={handleItemCodeSelect}
-                        handleAddPurchase={() => handleAddPurchase(final, setPurchases, setLoading)}
+                        handleAddPurchase={() =>
+                            handleAddPurchase(final, queryClient, setLoading)
+                        }
                     />
                 )}
 
@@ -261,7 +264,7 @@ const Dashboard = () => {
                         setShowAddForm={setShowAddItemForm}
                         setNewItem={setNewItem}
                         handleAddItem={() =>
-                            handleAddItem(newItem, setItems, setLoading)
+                            handleAddItem(newItem, queryClient, setLoading)
                         }
                     />
                 )}
@@ -274,7 +277,7 @@ const Dashboard = () => {
                         newFarmer={newFarmer}
                         setShowAddForm={setShowAddForm}
                         setNewFarmer={setNewFarmer}
-                        handleAddFarmer={() => handleAddFarmer(newFarmer, setFarmers, setLoading)}
+                        handleAddFarmer={() => handleAddFarmer(newFarmer, queryClient, setLoading)}
                     />
                 )}
 
@@ -286,7 +289,9 @@ const Dashboard = () => {
                         newSupplier={newSupplier}
                         setShowAddForm={setShowAddForm}
                         setNewSupplier={setNewSupplier}
-                        handleAddSupplier={() => handleAddSupplier(newSupplier, setSuppliers, setLoading)}
+                        handleAddSupplier={() =>
+                            handleAddSupplier(newSupplier, queryClient, setLoading)
+                        }
                     />
                 )}
                 {activeTab === 'Traders' && (
@@ -297,7 +302,9 @@ const Dashboard = () => {
                         newTrader={newTrader}
                         setShowAddForm={setShowAddForm}
                         setNewTrader={setNewTrader}
-                        handleAddTrader={() => handleAddTrader(newTrader, setTraders, setLoading)}
+                        handleAddTrader={() =>
+                            handleAddTrader(newTrader, queryClient, setLoading)
+                        }
                     />
                 )}
 
@@ -311,7 +318,7 @@ const Dashboard = () => {
                         newBatch={newBatch}
                         setShowAddForm={setShowAddForm}
                         setNewBatch={setNewBatch}
-                        handleAddBatch={() => handleAddBatch(newBatch as BatchPayload, setBatches, setLoading)}
+                        handleAddBatch={() => handleAddBatch(newBatch, queryClient, setLoading)}
                     />
                 )}
 
@@ -328,13 +335,13 @@ const Dashboard = () => {
                         newRequirement={newRequirement}
                         setShowAddForm={setShowAddForm}
                         setNewRequirement={setNewRequirement}
-                        handleAddRequirement={() => handleAddBatchRequirement(newRequirement, setRequirements, setLoading)}
+                        handleAddRequirement={() => handleAddBatchRequirement(newRequirement, queryClient, setLoading)}
                     />
                 )}
 
                 {activeTab === 'Batch Allocations' && (
                     <BatchAllocationsTable
-                        batchAllocations={batchAllocations}
+                        batchAllocations={allocations}
                         loading={loading}
                         showAddForm={showAddForm}
                         setShowAddForm={setShowAddForm}
@@ -346,7 +353,7 @@ const Dashboard = () => {
                     activeTab !== 'Production Lines' &&
                     activeTab !== 'Batches' &&
                     activeTab !== 'Batch Requirements' &&
-                    activeTab !== 'Batch Allocations' &&  (
+                    activeTab !== 'Batch Allocations' && (
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
                             <p className="text-gray-600">This section is under development</p>

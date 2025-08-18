@@ -1,27 +1,15 @@
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 
-export const fetchTraders = async (
-  setTraders: (data: any) => void,
-  setLoading: (loading: boolean) => void
-) => {
-  setLoading(true);
-  try {
-    const response = await api.get('/getall/traders');
-    setTraders(response.data);
-  } catch (error) {
-    console.error('Error fetching traders:', error);
-  } finally {
-    setLoading(false);
-  }
+export const fetchTraders = async (): Promise<Trader[]> => {
+  const response = await api.get('/getall/traders');
+  return response.data;
 };
 
 export const handleAddTrader = async (
   payload: TraderPayload,
-  setTraders: (data: any) => void,
-  setLoading: (loading: boolean) => void,
-  onSuccess?: () => void,
-  onError?: (error: any) => void
+  queryClient: any,
+  setLoading: (loading: boolean) => void
 ) => {
   if (
     !payload.name ||
@@ -38,22 +26,22 @@ export const handleAddTrader = async (
 
   setLoading(true);
   toast.info('Adding trader...');
-  try {
-    const response = await api.post('/insert/traders', payload);
-    console.log('Trader added:', response.data);
 
-    await fetchTraders(setTraders, setLoading);
+  try {
+    await api.post('/insert/traders', payload);
+
+    // Invalidate cache so traders list refetches automatically
+    queryClient.invalidateQueries(['traders']);
 
     toast.success('Trader added successfully!');
-    if (onSuccess) onSuccess();
   } catch (error) {
     console.error('Error adding trader:', error);
     toast.error('Error adding trader');
-    if (onError) onError(error);
   } finally {
     setLoading(false);
   }
 };
+
 
 export interface TraderPayload {
   name: string;
