@@ -8,6 +8,11 @@ use sea_orm::FromQueryResult;
 
 
 #[derive(Serialize)]
+pub struct ResponseMessage {
+    pub message: String,
+}
+
+#[derive(Serialize)]
 pub struct PurchaseWithItem {
     pub purchase_id: i32,
     pub item_code: String,
@@ -171,4 +176,12 @@ pub struct BatchRequirementResponse {
     pub status: RequirementStatus,               
     pub request_date: NaiveDate,
     
+}
+
+#[derive(serde::Deserialize)]
+pub struct ApprovePayload {
+    pub requirement_id: i32,
+    pub allocated_qty: Decimal,
+    pub allocation_date: NaiveDate, 
+    pub allocated_by: i32,
 }
