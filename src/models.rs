@@ -43,6 +43,7 @@ pub struct CreatePurchase {
     pub total_cost: Option<Decimal>,
     pub purchase_date: chrono::NaiveDate,
     pub supplier: Option<String>,
+    pub quantity: Decimal,
     pub created_by: Option<i32>,
 }
 

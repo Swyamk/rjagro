@@ -362,3 +362,28 @@ pub async fn get_supervisors_handler(State(db): State<DatabaseConnection>) -> im
         }
     }
 }
+
+// INVENTORY
+pub async fn get_inventory_handler(
+    State(db): State<DatabaseConnection>,
+) -> impl IntoResponse {
+    match inventory::Entity::find().all(&db).await {
+        Ok(data) => Json(data).into_response(),
+        Err(e) => {
+            eprintln!("Failed to fetch inventory: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+pub async fn get_inventory_movements_handler(
+    State(db): State<DatabaseConnection>,
+) -> impl IntoResponse {
+    match inventory_movements::Entity::find().all(&db).await {
+        Ok(data) => Json(data).into_response(),
+        Err(e) => {
+            eprintln!("Failed to fetch inventory movements: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}

@@ -1,6 +1,10 @@
 use crate::models::*;
 use axum::{extract::State, http::StatusCode, Json};
+use chrono::Utc;
+use entity::sea_orm_active_enums::MovementType;
 use entity::{sea_orm_active_enums::RequirementStatus, *};
+use sea_orm::EntityTrait;
+use sea_orm::TransactionTrait;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
 /// Production Lines
@@ -25,21 +29,81 @@ pub async fn create_purchase(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<CreatePurchase>,
 ) -> Result<Json<purchases::Model>, StatusCode> {
+    let txn = db.begin().await.map_err(|err| {
+        eprintln!("Failed to begin transaction: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // Insert purchase
     let new_purchase = purchases::ActiveModel {
-        item_code: Set(payload.item_code),
+        item_code: Set(payload.item_code.clone()),
         cost_per_unit: Set(payload.cost_per_unit),
         total_cost: Set(payload.total_cost),
         purchase_date: Set(payload.purchase_date),
-        supplier: Set(payload.supplier),
+        supplier: Set(payload.supplier.clone()),
         created_by: Set(payload.created_by),
         ..Default::default()
     };
 
-    new_purchase.insert(&db).await.map(Json).map_err(|err| {
+    let purchase = new_purchase.insert(&txn).await.map_err(|err| {
         eprintln!("Failed to insert purchase: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
-    })
+    })?;
+
+    // Insert/Update inventory
+    if let Some(inv) = inventory::Entity::find_by_id(payload.item_code.clone())
+        .one(&txn)
+        .await
+        .map_err(|err| {
+            eprintln!("Failed to fetch inventory: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+    {
+        // Item already exists → update
+        let mut active_inv: inventory::ActiveModel = inv.into();
+        active_inv.current_qty =
+            Set(active_inv.current_qty.take().unwrap_or_default() + payload.quantity);
+        active_inv.last_updated = Set(Utc::now().into());
+        active_inv.update(&txn).await.map_err(|err| {
+            eprintln!("Failed to update inventory: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    } else {
+        // Item does not exist → create
+        let new_inv = inventory::ActiveModel {
+            item_code: Set(payload.item_code.clone()),
+            current_qty: Set(payload.quantity),
+            last_updated: Set(Utc::now().into()),
+            ..Default::default()
+        };
+        new_inv.insert(&txn).await.map_err(|err| {
+            eprintln!("Failed to insert inventory: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    }
+
+    // Insert inventory movement
+    let movement = inventory_movements::ActiveModel {
+        item_code: Set(payload.item_code.clone()),
+        movement_type: Set(MovementType::Purchase),
+        qty_change: Set(payload.quantity),
+        reference_id: Set(Some(purchase.purchase_id)),
+        ..Default::default()
+    };
+
+    movement.insert(&txn).await.map_err(|err| {
+        eprintln!("Failed to insert inventory movement: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    txn.commit().await.map_err(|err| {
+        eprintln!("Failed to commit transaction: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Json(purchase))
 }
+
 pub async fn create_item(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<CreateItem>,
@@ -69,7 +133,7 @@ pub async fn create_batch(
         start_date: Set(payload.start_date),
         end_date: Set(payload.end_date),
         initial_bird_count: Set(payload.initial_bird_count),
-        current_bird_count: Set(payload.current_bird_count), 
+        current_bird_count: Set(payload.current_bird_count),
         ..Default::default()
     };
 
@@ -105,10 +169,9 @@ pub async fn create_batch_requirement(
         Err(e) => {
             eprintln!("❌ Failed to insert batch requirement: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
-
 
 /// Batch Allocations
 pub async fn create_batch_allocation(

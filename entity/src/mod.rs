@@ -16,3 +16,5 @@ pub mod sea_orm_active_enums;
 pub mod suppliers;
 pub mod traders;
 pub mod users;
+pub mod inventory;
+pub mod inventory_movements;

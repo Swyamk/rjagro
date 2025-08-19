@@ -678,7 +678,7 @@ enum BirdSellHistory {
     CreatedAt,
 }
 #[derive(DeriveIden)]
-enum Items {
+pub enum Items {
     Table,
     ItemCode, // string PK
     ItemName,

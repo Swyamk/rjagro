@@ -66,3 +66,17 @@ pub enum RequirementStatus {
     #[sea_orm(string_value = "pending")]
     Pending,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "movement_type")]
+pub enum MovementType {
+    #[sea_orm(string_value = "purchase")]
+    Purchase,
+    #[sea_orm(string_value = "allocation")]
+    Allocation,
+    #[sea_orm(string_value = "adjustment")]
+    Adjustment,
+    #[sea_orm(string_value = "transfer")]
+    Transfer,
+}
+
