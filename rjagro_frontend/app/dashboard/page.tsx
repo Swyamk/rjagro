@@ -21,11 +21,21 @@ import BatchRequirementsTable from '../components/tables/batch_requirements';
 import { fetchBatchAllocations } from '../api/batch_allocations';
 import BatchAllocationsTable from '../components/tables/batch_allocations';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchInventory, handleAddInventory, handleUpdateInventory } from '../api/inventory';
+import InventoryTable from '../components/tables/inventory';
+import { fetchInventoryMovements, handleAddInventoryMovement } from '../api/inventory_movement';
+import InventoryMovementsTable from '../components/tables/inventory_movement';
 
 export enum SupplierType {
     Feed = 'Feed',
     Chick = 'Chick',
     Medicine = 'Medicine',
+}
+enum MovementType {
+  PURCHASE = 'purchase',
+  ALLOCATION = 'allocation',
+  ADJUSTMENT = 'adjustment',
+  TRANSFER = 'transfer'
 }
 
 const Dashboard = () => {
@@ -182,8 +192,77 @@ const Dashboard = () => {
         staleTime: 5 * 60 * 1000,
     });
 
+    // Inventory state
+    const { data: inventory = [], isLoading: loadingInventory } = useQuery({
+        queryKey: ['inventory'],
+        queryFn: fetchInventory,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const [newInventory, setNewInventory] = useState<NewInventory>({
+        item_code: '',
+        item_name: '',
+        current_qty: ''
+    });
+
+    // Add this function to handle item code selection for inventory
+    const handleInventoryItemCodeSelect = (itemCode: string) => {
+        const selectedItem = items.find(item => item.item_code === itemCode);
+        if (selectedItem) {
+            setNewInventory(prev => ({
+                ...prev,
+                item_code: itemCode,
+                item_name: selectedItem.item_name
+            }));
+        }
+    };
+
+    // Create final payload for inventory
+    const finalInventory: InventoryPayload = {
+        item_code: newInventory.item_code,
+        current_qty: Number(newInventory.current_qty),
+    };
+
+    // Add this function to handle inventory updates
+    const handleInventoryUpdate = (item_code: string, current_qty: number) => {
+        handleUpdateInventory(item_code, { current_qty }, queryClient);
+    };
+
+    // Fetch inventory movements
+    const { data: inventoryMovements = [], isLoading: loadingInventoryMovements } = useQuery({
+        queryKey: ["inventory_movements"],
+        queryFn: fetchInventoryMovements,
+        staleTime: 5 * 60 * 1000,
+    });
+    const [newMovement, setNewMovement] = useState<NewInventoryMovement>({
+        item_code: '',
+        item_name: '',
+        qty_change: '',
+        movement_type: MovementType.PURCHASE,
+        reference_id: '',
+        movement_date: new Date().toISOString().slice(0, 10)
+    });
+
+    const handleMovementItemCodeSelect = (itemCode: string) => {
+        const selectedItem = items.find(item => item.item_code === itemCode);
+        if (selectedItem) {
+            setNewMovement(prev => ({
+                ...prev,
+                item_code: itemCode,
+                item_name: selectedItem.item_name
+            }));
+        }
+    };
+    const movementPayload: InventoryMovementPayload = {
+        item_code: newMovement.item_code,
+        qty_change: Number(newMovement.qty_change),
+        movement_type: newMovement.movement_type,
+        reference_id: newMovement.reference_id ? Number(newMovement.reference_id) : undefined,
+        movement_date: newMovement.movement_date,
+    };
+
     const tabs = [
-        'Users', 'Production Lines', 'Purchases', 'Items', 'Batches', 'Batch Requirements',
+        'Users', 'Production Lines', 'Purchases', 'Items', 'Inventory','Inventory Movements', 'Batches', 'Batch Requirements',
         'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
     ];
 
@@ -199,8 +278,6 @@ const Dashboard = () => {
             }));
         }
     };
-
-
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -348,17 +425,66 @@ const Dashboard = () => {
                     />
                 )}
 
-                {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
+                {activeTab === 'Inventory' && (
+                    <InventoryTable
+                        inventory={inventory}
+                        items={items}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newInventory={newInventory}
+                        setShowAddForm={setShowAddForm}
+                        setNewInventory={setNewInventory}
+                        handleItemCodeSelect={handleInventoryItemCodeSelect}
+                        handleAddInventory={() =>
+                            handleAddInventory(finalInventory, queryClient, setLoading, () => {
+                                setNewInventory({ item_code: '', item_name: '', current_qty: '' });
+                                setShowAddForm(false);
+                            })
+                        }
+                        handleUpdateInventory={handleInventoryUpdate}
+                    />
+                )}
+
+                {activeTab === 'Inventory Movements' && (
+                    <InventoryMovementsTable
+                        inventoryMovements={inventoryMovements}
+                        items={items}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newMovement={newMovement}
+                        setShowAddForm={setShowAddForm}
+                        setNewMovement={setNewMovement}
+                        handleItemCodeSelect={handleMovementItemCodeSelect}
+                        handleAddMovement={() =>
+                            handleAddInventoryMovement(movementPayload, queryClient, setLoading, () => {
+                                setShowAddForm(false);
+                                setNewMovement({
+                                    item_code: '',
+                                    item_name: '',
+                                    qty_change: '',
+                                    movement_type: MovementType.PURCHASE,
+                                    reference_id: '',
+                                    movement_date: new Date().toISOString().slice(0, 10)
+                                });
+                            })
+                        }
+                    />
+                )}
+
+                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
                     activeTab !== 'Traders' &&
                     activeTab !== 'Production Lines' &&
                     activeTab !== 'Batches' &&
                     activeTab !== 'Batch Requirements' &&
-                    activeTab !== 'Batch Allocations' && (
+                    activeTab !== 'Batch Allocations' &&
+                    activeTab !== 'Inventory' &&
+                    activeTab !== 'Inventory Movements' && (
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
                             <p className="text-gray-600">This section is under development</p>
                         </div>
                     )}
+
             </div>
         </div>
     );

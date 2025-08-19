@@ -100,7 +100,7 @@ interface ProductionLine {
   line_name: string;
   supervisor_id: number;
   supervisor_name: string;
-  created_at: string; 
+  created_at: string;
 }
 
 interface ProductionLinePayload {
@@ -109,9 +109,9 @@ interface ProductionLinePayload {
 }
 
 interface SupervisorSimplified {
-    user_id: number;
-    name: string;
-    role: string;
+  user_id: number;
+  name: string;
+  role: string;
 }
 
 interface Batch {
@@ -175,4 +175,60 @@ interface NewBatchAllocation {
   requirement_id: number | '';
   allocated_qty: number | '';
   allocated_by: number | '';
+}
+
+
+interface Inventory {
+  item_code: string;
+  current_qty: number;
+  last_updated: string;
+}
+
+interface InventoryWithItemDetails extends Inventory {
+  item_name?: string; // Joined from items table on frontend
+  unit?: string; // Joined from items table on frontend
+}
+
+interface NewInventory {
+  item_code: string;
+  item_name: string;
+  current_qty: number | '';
+}
+
+interface InventoryPayload {
+  item_code: string;
+  current_qty: number;
+}
+
+enum MovementType {
+  PURCHASE = 'purchase',
+  ALLOCATION = 'allocation',
+  ADJUSTMENT = 'adjustment',
+  TRANSFER = 'transfer'
+}
+
+interface InventoryMovement {
+  movement_id: number;
+  item_code: string;
+  qty_change: number;
+  movement_type: MovementType;
+  reference_id?: number;
+  movement_date: string;
+}
+
+interface InventoryMovementPayload {
+  item_code: string;
+  qty_change: number;
+  movement_type: MovementType;
+  reference_id?: number;
+  movement_date: string;
+}
+
+interface NewInventoryMovement {
+  item_code: string;
+  item_name: string;
+  qty_change: number | '';
+  movement_type: MovementType;
+  reference_id: number | '';
+  movement_date: string;
 }
