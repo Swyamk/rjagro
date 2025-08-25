@@ -1,3 +1,4 @@
+import { Item } from '../types/interfaces';
 import api from '../utils/api';
 
 export const fetchItems = async (): Promise<Item[]> => {

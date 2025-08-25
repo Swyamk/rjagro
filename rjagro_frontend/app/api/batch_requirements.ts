@@ -1,3 +1,4 @@
+import { BatchRequirement } from "../types/interfaces";
 import api from "../utils/api";
 import { toast } from "react-toastify";
 

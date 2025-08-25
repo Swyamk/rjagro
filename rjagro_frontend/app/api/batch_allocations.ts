@@ -1,5 +1,6 @@
+import { BatchAllocation } from '../types/interfaces';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+// import { toast } from 'react-toastify';
 
 export const fetchBatchAllocations = async (): Promise<BatchAllocation[]> => {
   const response = await api.get("/getall/batch_allocations");

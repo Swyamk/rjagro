@@ -1,3 +1,4 @@
+import { Supplier, SupplierPayload } from "../types/interfaces";
 import api from "../utils/api";
 import { toast } from "react-toastify";
 export const fetchSuppliers = async (): Promise<Supplier[]> => {

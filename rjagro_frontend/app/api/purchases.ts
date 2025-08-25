@@ -1,3 +1,4 @@
+import { LedgerAccountType, Purchase } from '../types/interfaces';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 
@@ -48,5 +49,8 @@ export interface PurchasePayload {
     total_cost: number;
     purchase_date: string;
     supplier: string;
+    quantity: number;
     created_by: number;
+    payment_account: LedgerAccountType;
 }
+

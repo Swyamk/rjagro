@@ -1,3 +1,4 @@
+import { Trader } from '../types/interfaces';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 

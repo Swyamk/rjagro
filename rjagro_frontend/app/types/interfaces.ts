@@ -1,10 +1,11 @@
-interface Item {
+export interface Item {
   item_code: string;
   item_name: string;
   unit: string;
 }
 
-interface Purchase {
+export interface Purchase {
+  payment_method: string;
   purchase_id: number;
   item_code: string;
   item_name: string;
@@ -13,17 +14,20 @@ interface Purchase {
   purchase_date: string;
   supplier: string;
   created_by: number;
+  payment_account?: LedgerAccountType;
 }
 
-interface NewPurchase {
+export interface NewPurchase {
   item_code: string;
   item_name: string;
   cost_per_unit: number | '';
   quantity: number | '';
   supplier: string;
+  payment_method?: string;
+  payment_account?: LedgerAccountType;
 }
 
-interface Farmer {
+export interface Farmer {
   farmer_id: number;
   name: string;
   phone_number: string;
@@ -35,7 +39,7 @@ interface Farmer {
   created_at: string;
 }
 
-interface NewFarmer {
+export interface NewFarmer {
   name: string;
   phone_number: string;
   address: string;
@@ -45,7 +49,7 @@ interface NewFarmer {
   area_size: number | '';
 }
 
-interface Supplier {
+export interface Supplier {
   supplier_id: number;
   supplier_type: SupplierType;
   name: string;
@@ -57,7 +61,7 @@ interface Supplier {
   created_at: string;
 }
 
-interface SupplierPayload {
+export interface SupplierPayload {
   supplier_type: SupplierType;
   name: string;
   phone_number: string;
@@ -66,14 +70,14 @@ interface SupplierPayload {
   bank_name: string;
   ifsc_code: string;
 }
-enum SupplierType {
+export enum SupplierType {
   Feed = 'Feed',
   Chick = 'Chick',
   Medicine = 'Medicine',
 }
 
 
-interface Trader {
+export interface Trader {
   trader_id: number;
   name: string;
   phone_number: string;
@@ -85,7 +89,7 @@ interface Trader {
   created_at: string;
 }
 
-interface NewTrader {
+export interface NewTrader {
   name: string;
   phone_number: string;
   address: string;
@@ -95,7 +99,7 @@ interface NewTrader {
   area: string;
 }
 
-interface ProductionLine {
+export interface ProductionLine {
   line_id: number;
   line_name: string;
   supervisor_id: number;
@@ -103,18 +107,18 @@ interface ProductionLine {
   created_at: string;
 }
 
-interface ProductionLinePayload {
+export interface ProductionLinePayload {
   line_name: string;
   supervisor_id: number | '';
 }
 
-interface SupervisorSimplified {
+export interface SupervisorSimplified {
   user_id: number;
   name: string;
   role: string;
 }
 
-interface Batch {
+export interface Batch {
   batch_id: number;
   line_id: number;
   supervisor_id: number;
@@ -129,7 +133,7 @@ interface Batch {
   created_at: string;
 }
 
-interface BatchPayload {
+export interface BatchPayload {
   line_id: number | '';
   supervisor_id: number | '';
   farmer_id: number | '';
@@ -139,7 +143,7 @@ interface BatchPayload {
   current_bird_count: number | '';
 }
 
-interface BatchRequirement {
+export interface BatchRequirement {
   requirement_id: number;
   line_id: number;
   line_name: string;
@@ -154,7 +158,7 @@ interface BatchRequirement {
   request_date: string;
 }
 
-interface NewBatchRequirement {
+export interface NewBatchRequirement {
   batch_id: number | '';
   line_id: number | '';
   farmer_id: number | '';
@@ -163,7 +167,7 @@ interface NewBatchRequirement {
   quantity: number | '';
 }
 
-interface BatchAllocation {
+export interface BatchAllocation {
   allocation_id: number;
   requirement_id: number;
   allocated_qty: string;
@@ -171,43 +175,43 @@ interface BatchAllocation {
   allocated_by: number;
 }
 
-interface NewBatchAllocation {
+export interface NewBatchAllocation {
   requirement_id: number | '';
   allocated_qty: number | '';
   allocated_by: number | '';
 }
 
 
-interface Inventory {
+export interface Inventory {
   item_code: string;
   current_qty: number;
   last_updated: string;
 }
 
-interface InventoryWithItemDetails extends Inventory {
+export interface InventoryWithItemDetails extends Inventory {
   item_name?: string; // Joined from items table on frontend
   unit?: string; // Joined from items table on frontend
 }
 
-interface NewInventory {
+export interface NewInventory {
   item_code: string;
   item_name: string;
   current_qty: number | '';
 }
 
-interface InventoryPayload {
+export interface InventoryPayload {
   item_code: string;
   current_qty: number;
 }
 
-enum MovementType {
+export enum MovementType {
   PURCHASE = 'purchase',
   ALLOCATION = 'allocation',
   ADJUSTMENT = 'adjustment',
   TRANSFER = 'transfer'
 }
 
-interface InventoryMovement {
+export interface InventoryMovement {
   movement_id: number;
   item_code: string;
   qty_change: number;
@@ -216,7 +220,7 @@ interface InventoryMovement {
   movement_date: string;
 }
 
-interface InventoryMovementPayload {
+export interface InventoryMovementPayload {
   item_code: string;
   qty_change: number;
   movement_type: MovementType;
@@ -224,11 +228,54 @@ interface InventoryMovementPayload {
   movement_date: string;
 }
 
-interface NewInventoryMovement {
+export interface NewInventoryMovement {
   item_code: string;
   item_name: string;
   qty_change: number | '';
   movement_type: MovementType;
   reference_id: number | '';
   movement_date: string;
+}
+
+export enum LedgerAccountType {
+  Asset = "Asset",
+  Liability = "Liability",
+  Equity = "Equity",
+  Revenue = "Revenue",
+  Expense = "Expense"
+}
+
+export interface LedgerEntry {
+  entry_id: number;
+  transaction_type: LedgerAccountType;
+  debit?: number;
+  credit?: number;
+  txn_date: string;
+  reference_table?: string;
+  reference_id?: number;
+  narration?: string;
+  created_at: string;
+  created_by?: number;
+  created_by_name?: string;
+}
+
+export interface LedgerEntryPayload {
+  transaction_type: LedgerAccountType;
+  debit?: number;
+  credit?: number;
+  txn_date: string;
+  reference_table?: string;
+  reference_id?: number;
+  narration?: string;
+  created_by?: number;
+}
+
+export interface NewLedgerEntry {
+  transaction_type: LedgerAccountType | '';
+  debit: number | '';
+  credit: number | '';
+  txn_date: string;
+  reference_table: string;
+  reference_id: number | '';
+  narration: string;
 }

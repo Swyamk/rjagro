@@ -1,3 +1,4 @@
+import { InventoryMovement, InventoryMovementPayload } from '../types/interfaces';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 
