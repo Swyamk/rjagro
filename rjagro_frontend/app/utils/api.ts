@@ -14,13 +14,15 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const token = Cookies.get("token");
     if (!token) return config;
+    // console.log("token is:: ", token);
 
 
     const prevHeaders = config.headers as unknown;
 
     if (prevHeaders && typeof (prevHeaders as any).set === "function") {
-        (prevHeaders as any).set("Authorization", `${token}`);
+        (prevHeaders as any).set("Authorization", `Bearer ${token}`);
         config.headers = prevHeaders as AxiosRequestHeaders;
+        // console.log("Headers after setting token:", config.headers);
     } else {
         const plain = (prevHeaders as Record<string, string> | undefined) ?? {};
         config.headers = {

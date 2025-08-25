@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState } from 'react';
 import { fetchPurchases, handleAddPurchase, PurchasePayload } from '../api/purchases';
 import { fetchItems, handleAddItem } from '../api/items';
 import PurchasesTable from '../components/tables/purchases';
@@ -25,18 +25,9 @@ import { fetchInventory, handleAddInventory, handleUpdateInventory } from '../ap
 import InventoryTable from '../components/tables/inventory';
 import { fetchInventoryMovements, handleAddInventoryMovement } from '../api/inventory_movement';
 import InventoryMovementsTable from '../components/tables/inventory_movement';
-
-export enum SupplierType {
-    Feed = 'Feed',
-    Chick = 'Chick',
-    Medicine = 'Medicine',
-}
-enum MovementType {
-  PURCHASE = 'purchase',
-  ALLOCATION = 'allocation',
-  ADJUSTMENT = 'adjustment',
-  TRANSFER = 'transfer'
-}
+import { BatchPayload, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchRequirement, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerEntry, NewPurchase, NewTrader, ProductionLinePayload, SupplierPayload, SupplierType } from '../types/interfaces';
+import { fetchLedgerEntries, handleAddLedgerEntry } from '../api/ledger_entries';
+import LedgerEntriesTable from '../components/tables/ledger_entries';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -44,7 +35,9 @@ const Dashboard = () => {
 
 
     const [activeTab, setActiveTab] = useState('Purchases');
-    const { data: purchases = [], isLoading: loadingPurchases } = useQuery({
+    const { data: purchases = [], 
+        // isLoading: loadingPurchases 
+    } = useQuery({
         queryKey: ['purchases'],
         queryFn: fetchPurchases,
         staleTime: 5 * 60 * 1000,
@@ -56,21 +49,26 @@ const Dashboard = () => {
         item_name: '',
         cost_per_unit: '',
         quantity: '',
-        supplier: ''
+        supplier: '',
+        payment_method: '',
+        payment_account: undefined
     });
 
     const final: PurchasePayload = {
         item_code: newPurchase.item_code,
         cost_per_unit: Number(newPurchase.cost_per_unit),
         total_cost: Number(newPurchase.cost_per_unit) * Number(newPurchase.quantity),
+        quantity: Number(newPurchase.quantity),
         purchase_date: new Date().toISOString().slice(0, 10),
         supplier: newPurchase.supplier,
+        payment_account: newPurchase.payment_account ?? LedgerAccountType.Asset,
         // fix this shit
         created_by: user ? user.user_id : 9999,
     };
-
     // items
-    const { data: items = [], isLoading: loadingItems } = useQuery({
+    const { data: items = [],
+        //  isLoading: loadingItems 
+        } = useQuery({
         queryKey: ['items'],
         queryFn: fetchItems,
         staleTime: 5 * 60 * 1000, // 5 minutes cache
@@ -83,7 +81,9 @@ const Dashboard = () => {
     const [showAddItemForm, setShowAddItemForm] = useState(false);
 
     // Farmers state
-    const { data: farmers = [], isLoading: loadingFarmers } = useQuery({
+    const { data: farmers = [],
+        //  isLoading: loadingFarmers 
+        } = useQuery({
         queryKey: ["farmers"],
         queryFn: fetchFarmers,
         staleTime: 5 * 60 * 1000,
@@ -99,7 +99,9 @@ const Dashboard = () => {
     });
 
     //Suppliers state
-    const { data: suppliers = [], isLoading: loadingSuppliers } = useQuery({
+    const { data: suppliers = [], 
+        // isLoading: loadingSuppliers 
+    } = useQuery({
         queryKey: ['suppliers'],
         queryFn: fetchSuppliers,
         staleTime: 5 * 60 * 1000, // cache 5 min
@@ -115,7 +117,9 @@ const Dashboard = () => {
     });
 
     // Traders state
-    const { data: traders = [], isLoading: loadingTraders } = useQuery({
+    const { data: traders = [], 
+        // isLoading: loadingTraders
+     } = useQuery({
         queryKey: ['traders'],
         queryFn: fetchTraders,
         staleTime: 5 * 60 * 1000, // cache for 5 minutes
@@ -137,13 +141,17 @@ const Dashboard = () => {
         supervisor_id: 0,
     });
 
-    const { data: productionLines = [], isLoading: loadingProductionLines } = useQuery({
+    const { data: productionLines = [],
+        //  isLoading: loadingProductionLines 
+        } = useQuery({
         queryKey: ['production_lines'],
         queryFn: fetchProductionLines,
         staleTime: 5 * 60 * 1000,
     });
 
-    const { data: supervisors = [], isLoading: loadingSupervisors } = useQuery({
+    const { data: supervisors = [],
+        //  isLoading: loadingSupervisors
+         } = useQuery({
         queryKey: ['supervisors'],
         queryFn: fetchSupervisors,
         staleTime: 5 * 60 * 1000,
@@ -154,7 +162,9 @@ const Dashboard = () => {
     };
 
     // Batches state
-    const { data: batches = [], isLoading: loadingBatches } = useQuery({
+    const { data: batches = [], 
+        // isLoading: loadingBatches 
+    } = useQuery({
         queryKey: ["batches"],
         queryFn: fetchBatches,
         staleTime: 5 * 60 * 1000,
@@ -171,7 +181,9 @@ const Dashboard = () => {
     });
 
     // Requirements state
-    const { data: requirements = [], isLoading: loadingRequirements } = useQuery({
+    const { data: requirements = [], 
+        // isLoading: loadingRequirements 
+    } = useQuery({
         queryKey: ["batch_requirements"],
         queryFn: fetchBatchRequirements,
         staleTime: 5 * 60 * 1000,
@@ -186,14 +198,18 @@ const Dashboard = () => {
     });
 
     // Batch Allocations state
-    const { data: allocations = [], isLoading: loadingAllocations } = useQuery({
+    const { data: allocations = [],
+        //  isLoading: loadingAllocations 
+        } = useQuery({
         queryKey: ["batch_allocations"],
         queryFn: fetchBatchAllocations,
         staleTime: 5 * 60 * 1000,
     });
 
     // Inventory state
-    const { data: inventory = [], isLoading: loadingInventory } = useQuery({
+    const { data: inventory = [], 
+        // isLoading: loadingInventory 
+    } = useQuery({
         queryKey: ['inventory'],
         queryFn: fetchInventory,
         staleTime: 5 * 60 * 1000,
@@ -229,7 +245,9 @@ const Dashboard = () => {
     };
 
     // Fetch inventory movements
-    const { data: inventoryMovements = [], isLoading: loadingInventoryMovements } = useQuery({
+    const { data: inventoryMovements = [], 
+        // isLoading: loadingInventoryMovements 
+    } = useQuery({
         queryKey: ["inventory_movements"],
         queryFn: fetchInventoryMovements,
         staleTime: 5 * 60 * 1000,
@@ -261,8 +279,39 @@ const Dashboard = () => {
         movement_date: newMovement.movement_date,
     };
 
+    // Ledger Entries state
+    const { data: ledgerEntries = [], 
+        // isLoading: loadingLedgerEntries
+     } = useQuery({
+        queryKey: ["ledger_entries"],
+        queryFn: fetchLedgerEntries,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const [newLedgerEntry, setNewLedgerEntry] = useState<NewLedgerEntry>({
+        transaction_type: '',
+        debit: '',
+        credit: '',
+        txn_date: new Date().toISOString().slice(0, 10),
+        reference_table: '',
+        reference_id: '',
+        narration: ''
+    });
+    const finalLedgerEntry: LedgerEntryPayload = {
+        transaction_type: newLedgerEntry.transaction_type as LedgerAccountType,
+        debit: newLedgerEntry.debit ? Number(newLedgerEntry.debit) : undefined,
+        credit: newLedgerEntry.credit ? Number(newLedgerEntry.credit) : undefined,
+        txn_date: newLedgerEntry.txn_date,
+        reference_table: newLedgerEntry.reference_table || undefined,
+        reference_id: newLedgerEntry.reference_id ? Number(newLedgerEntry.reference_id) : undefined,
+        narration: newLedgerEntry.narration || undefined,
+        created_by: user ? user.user_id : undefined,
+    };
+
+
+
     const tabs = [
-        'Users', 'Production Lines', 'Purchases', 'Items', 'Inventory','Inventory Movements', 'Batches', 'Batch Requirements',
+        'Users','Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Batches', 'Batch Requirements',
         'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
     ];
 
@@ -471,14 +520,40 @@ const Dashboard = () => {
                     />
                 )}
 
-                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
+                {activeTab === 'Ledger Entries' && (
+                    <LedgerEntriesTable
+                        ledgerEntries={ledgerEntries}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newLedgerEntry={newLedgerEntry}
+                        setShowAddForm={setShowAddForm}
+                        setNewLedgerEntry={setNewLedgerEntry}
+                        handleAddLedgerEntry={() =>
+                            handleAddLedgerEntry(finalLedgerEntry, queryClient, setLoading, () => {
+                                setShowAddForm(false);
+                                setNewLedgerEntry({
+                                    transaction_type: '',
+                                    debit: '',
+                                    credit: '',
+                                    txn_date: new Date().toISOString().slice(0, 10),
+                                    reference_table: '',
+                                    reference_id: '',
+                                    narration: ''
+                                });
+                            })
+                        }
+                    />
+                )}
+
+                {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
                     activeTab !== 'Traders' &&
                     activeTab !== 'Production Lines' &&
                     activeTab !== 'Batches' &&
                     activeTab !== 'Batch Requirements' &&
                     activeTab !== 'Batch Allocations' &&
                     activeTab !== 'Inventory' &&
-                    activeTab !== 'Inventory Movements' && (
+                    activeTab !== 'Inventory Movements' &&
+                    activeTab !== 'Ledger Entries' && (
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
                             <p className="text-gray-600">This section is under development</p>
