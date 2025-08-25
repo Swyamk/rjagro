@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, X, Save } from 'lucide-react';
+import { Batch, BatchPayload, Farmer, SupervisorSimplified } from '@/app/types/interfaces';
 
 interface BatchesTableProps {
     batches: Batch[];

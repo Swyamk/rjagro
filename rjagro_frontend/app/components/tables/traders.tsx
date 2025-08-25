@@ -1,5 +1,6 @@
 import React from 'react';
 import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
+import { NewTrader, Trader } from '@/app/types/interfaces';
 
 interface TradersTableProps {
   traders: Trader[];

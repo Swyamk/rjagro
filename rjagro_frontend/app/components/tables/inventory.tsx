@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save, Package } from 'lucide-react';
+import { Inventory, InventoryWithItemDetails, Item, NewInventory } from '@/app/types/interfaces';
 
 interface InventoryTableProps {
     inventory: Inventory[];

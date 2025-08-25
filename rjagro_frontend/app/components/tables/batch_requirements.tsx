@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, X, Save, Check, XCircle, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { handleApproveRequirement, handleRejectRequirement } from '@/app/api/batch_requirements';
 import { useAuth } from '@/app/hooks/useAuth';
+import { Batch, BatchRequirement, Farmer, Item, NewBatchRequirement, ProductionLine, SupervisorSimplified } from '@/app/types/interfaces';
 
 interface BatchRequirementsProps {
   requirements: BatchRequirement[];

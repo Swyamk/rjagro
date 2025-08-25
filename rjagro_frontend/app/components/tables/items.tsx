@@ -1,3 +1,4 @@
+import { Item } from '@/app/types/interfaces';
 import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
 interface ItemsTableProps {
     items: Item[];

@@ -1,3 +1,4 @@
+import { Farmer, NewFarmer } from '@/app/types/interfaces';
 import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
 
 interface FarmersTableProps {

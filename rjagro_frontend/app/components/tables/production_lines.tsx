@@ -1,5 +1,6 @@
 import React from 'react';
 import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
+import { ProductionLine, ProductionLinePayload, SupervisorSimplified } from '@/app/types/interfaces';
 
 interface ProductionLinesTableProps {
     productionLines: ProductionLine[];

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
+import { Edit, Filter, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { BatchAllocation } from '@/app/types/interfaces';
 
 interface BatchAllocationsTableProps {
     batchAllocations: BatchAllocation[];
@@ -11,7 +12,7 @@ interface BatchAllocationsTableProps {
 const BatchAllocationsTable: React.FC<BatchAllocationsTableProps> = ({
     batchAllocations,
     loading,
-    showAddForm,
+    // showAddForm,
     setShowAddForm,
 }) => (
     <div className="bg-white rounded-lg shadow">

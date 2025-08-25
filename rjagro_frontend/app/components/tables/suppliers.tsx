@@ -1,6 +1,7 @@
 // src/components/tables/suppliers.tsx
 'use client';
-import { SupplierType } from '@/app/dashboard/page';
+import { Supplier, SupplierPayload, SupplierType } from '@/app/types/interfaces';
+// import { SupplierType } from '@/app/dashboard/page';
 import { Save, X } from 'lucide-react';
 import React from 'react';
 
