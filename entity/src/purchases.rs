@@ -13,6 +13,7 @@ pub struct Model {
     pub cost_per_unit: Decimal,
     #[sea_orm(column_type = "Decimal(Some((12, 2)))")]
     pub total_cost: Option<Decimal>,
+    pub quantity: Decimal,
     pub purchase_date: Date,
     pub supplier: Option<String>,
     pub created_by: Option<i32>,

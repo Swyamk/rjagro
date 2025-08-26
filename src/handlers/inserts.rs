@@ -39,6 +39,7 @@ pub async fn create_purchase(
         item_code: Set(payload.item_code.clone()),
         cost_per_unit: Set(payload.cost_per_unit),
         total_cost: Set(payload.total_cost),
+        quantity: Set(payload.quantity),
         purchase_date: Set(payload.purchase_date),
         supplier: Set(payload.supplier.clone()),
         created_by: Set(payload.created_by),
@@ -74,7 +75,6 @@ pub async fn create_purchase(
             item_code: Set(payload.item_code.clone()),
             current_qty: Set(payload.quantity),
             last_updated: Set(Utc::now().into()),
-            ..Default::default()
         };
         new_inv.insert(&txn).await.map_err(|err| {
             eprintln!("Failed to insert inventory: {}", err);
@@ -158,7 +158,6 @@ pub async fn create_item(
         item_code: Set(payload.item_code),
         item_name: Set(payload.item_name),
         unit: Set(payload.unit),
-        ..Default::default()
     };
     new_item
         .insert(&db)
@@ -190,8 +189,6 @@ pub async fn create_batch(
         .inspect_err(|err| eprintln!("Failed to insert batch: {}", err))
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
-
-/// Batch Requirements
 
 pub async fn create_batch_requirement(
     State(db): State<DatabaseConnection>,
