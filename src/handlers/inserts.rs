@@ -1,7 +1,7 @@
 use crate::models::*;
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::Utc;
-use entity::sea_orm_active_enums::MovementType;
+use entity::sea_orm_active_enums::{LedgerAccountType, MovementType};
 use entity::{sea_orm_active_enums::RequirementStatus, *};
 use sea_orm::EntityTrait;
 use sea_orm::TransactionTrait;
@@ -93,6 +93,52 @@ pub async fn create_purchase(
 
     movement.insert(&txn).await.map_err(|err| {
         eprintln!("Failed to insert inventory movement: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let total_cost = payload.total_cost;
+
+    // Debit → Inventory
+    let debit_entry = ledger_entries::ActiveModel {
+        transaction_type: Set(LedgerAccountType::Asset),
+        debit: Set(total_cost),
+        credit: Set(None),
+        txn_date: Set(purchase.purchase_date),
+        reference_table: Set(Some("purchases".into())),
+        reference_id: Set(Some(purchase.purchase_id)),
+        narration: Set(Some(format!(
+            "Purchase of {} (item {})",
+            payload.quantity, payload.item_code
+        ))),
+        created_at: Set(Utc::now().into()),
+        created_by: Set(payload.created_by),
+        ..Default::default()
+    };
+
+    debit_entry.insert(&txn).await.map_err(|err| {
+        eprintln!("Failed to insert ledger debit entry: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // Credit → chosen account (Cash / Payables etc.)
+    let credit_entry = ledger_entries::ActiveModel {
+        transaction_type: Set(payload.payment_account.clone()), 
+        debit: Set(None),
+        credit: Set(total_cost),
+        txn_date: Set(purchase.purchase_date),
+        reference_table: Set(Some("purchases".into())),
+        reference_id: Set(Some(purchase.purchase_id)),
+        narration: Set(Some(format!(
+            "Payment for purchase of {} (item {})",
+            payload.quantity, payload.item_code
+        ))),
+        created_at: Set(Utc::now().into()),
+        created_by: Set(payload.created_by),
+        ..Default::default()
+    };
+
+    credit_entry.insert(&txn).await.map_err(|err| {
+        eprintln!("Failed to insert ledger credit entry: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 

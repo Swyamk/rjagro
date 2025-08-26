@@ -11,6 +11,7 @@ pub enum BatchStatus {
     #[sea_orm(string_value = "closed")]
     Closed,
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "purchase_category")]
 pub enum PurchaseCategory {
@@ -21,6 +22,7 @@ pub enum PurchaseCategory {
     #[sea_orm(string_value = "medicine")]
     Medicine,
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(
     rs_type = "String",
@@ -35,6 +37,7 @@ pub enum RequirementCategory {
     #[sea_orm(string_value = "medicine")]
     Medicine,
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "supplier_type")]
 pub enum SupplierType {
@@ -45,6 +48,7 @@ pub enum SupplierType {
     #[sea_orm(string_value = "medicine")]
     Medicine,
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize, Hash)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "user_role")]
 pub enum UserRole {
@@ -80,3 +84,17 @@ pub enum MovementType {
     Transfer,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize,Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "ledger_account_type")]
+pub enum LedgerAccountType {
+    #[sea_orm(string_value = "asset")]
+    Asset,
+    #[sea_orm(string_value = "liability")]
+    Liability,
+    #[sea_orm(string_value = "equity")]
+    Equity,
+    #[sea_orm(string_value = "revenue")]
+    Revenue,
+    #[sea_orm(string_value = "expense")]
+    Expense,
+}

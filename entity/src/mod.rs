@@ -18,3 +18,4 @@ pub mod traders;
 pub mod users;
 pub mod inventory;
 pub mod inventory_movements;
+pub mod ledger_entries;

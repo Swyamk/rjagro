@@ -541,7 +541,7 @@ enum SupplierType {
 }
 
 #[derive(DeriveIden)]
-enum Users {
+pub enum Users {
     Table,
     UserId,
     Name,

@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use entity::sea_orm_active_enums::{
-    BatchStatus, RequirementStatus, SupplierType, UserRole
+    BatchStatus, LedgerAccountType, RequirementStatus, SupplierType, UserRole
 };
 use sea_orm::prelude::{DateTimeWithTimeZone, Decimal};
 use serde::{Deserialize, Serialize};
@@ -45,6 +45,7 @@ pub struct CreatePurchase {
     pub supplier: Option<String>,
     pub quantity: Decimal,
     pub created_by: Option<i32>,
+    pub payment_account: LedgerAccountType,
 }
 
 #[derive(Deserialize)]

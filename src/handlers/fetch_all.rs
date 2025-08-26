@@ -387,3 +387,15 @@ pub async fn get_inventory_movements_handler(
         }
     }
 }
+
+pub async fn get_ledger_entries_handler(
+    State(db): State<DatabaseConnection>,
+) -> impl IntoResponse {
+    match ledger_entries::Entity::find().all(&db).await {
+        Ok(data) => Json(data).into_response(),
+        Err(e) => {
+            eprintln!("Failed to fetch ledger entries: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
