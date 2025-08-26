@@ -34,7 +34,7 @@ pub struct Model {
 
     /// Metadata
     pub created_at: DateTimeWithTimeZone,
-    pub created_by: Option<i32>, 
+    pub created_by: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

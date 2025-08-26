@@ -1,7 +1,7 @@
+use crate::m20250810_161418_iteration1::Users;
 use sea_orm_migration::prelude::extension::postgres::Type;
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::schema::*;
-use crate::m20250810_161418_iteration1::Users;
 /// Migration for financials: ledger_entries only
 #[derive(DeriveMigrationName)]
 pub struct Migration;

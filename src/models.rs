@@ -1,11 +1,10 @@
 use chrono::NaiveDate;
 use entity::sea_orm_active_enums::{
-    BatchStatus, LedgerAccountType, RequirementStatus, SupplierType, UserRole
+    BatchStatus, LedgerAccountType, RequirementStatus, SupplierType, UserRole,
 };
 use sea_orm::prelude::{DateTimeWithTimeZone, Decimal};
-use serde::{Deserialize, Serialize};
 use sea_orm::FromQueryResult;
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 pub struct ResponseMessage {
@@ -52,11 +51,11 @@ pub struct CreatePurchase {
 pub struct CreateBatch {
     pub line_id: i32,
     pub supervisor_id: i32,
-    pub farmer_id: i32, 
+    pub farmer_id: i32,
     pub start_date: chrono::NaiveDate,
-    pub end_date: chrono::NaiveDate, 
+    pub end_date: chrono::NaiveDate,
     pub initial_bird_count: i32,
-    pub current_bird_count: Option<i32>,    
+    pub current_bird_count: Option<i32>,
 }
 
 #[derive(Deserialize)]
@@ -64,7 +63,7 @@ pub struct CreateBatchRequirement {
     pub batch_id: i32,
     pub line_id: i32,
     pub supervisor_id: i32,
-    pub item_code: String, 
+    pub item_code: String,
     pub quantity: Decimal,
     pub request_date: chrono::NaiveDate,
 }
@@ -76,7 +75,6 @@ pub struct CreateBatchAllocation {
     pub allocation_date: chrono::NaiveDate,
     pub allocated_by: i32,
 }
-
 
 #[derive(Deserialize)]
 pub struct CreateFarmer {
@@ -147,7 +145,7 @@ pub struct UserSimplified {
     pub role: UserRole,
 }
 
-#[derive(Debug, Serialize,FromQueryResult)]
+#[derive(Debug, Serialize, FromQueryResult)]
 pub struct BatchResponse {
     pub batch_id: i32,
     pub line_id: i32,
@@ -175,15 +173,14 @@ pub struct BatchRequirementResponse {
     pub item_name: Option<String>,
     pub item_unit: Option<String>,
     pub quantity: Decimal,
-    pub status: RequirementStatus,               
+    pub status: RequirementStatus,
     pub request_date: NaiveDate,
-    
 }
 
 #[derive(serde::Deserialize)]
 pub struct ApprovePayload {
     pub requirement_id: i32,
     pub allocated_qty: Decimal,
-    pub allocation_date: NaiveDate, 
+    pub allocation_date: NaiveDate,
     pub allocated_by: i32,
 }

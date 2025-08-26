@@ -84,8 +84,12 @@ pub enum MovementType {
     Transfer,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize,Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "ledger_account_type")]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "Enum",
+    enum_name = "ledger_account_type"
+)]
 pub enum LedgerAccountType {
     #[sea_orm(string_value = "asset")]
     Asset,

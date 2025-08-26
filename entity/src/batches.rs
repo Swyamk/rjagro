@@ -13,10 +13,10 @@ pub struct Model {
     pub supervisor_id: i32,
     pub farmer_id: i32,
     pub start_date: Date,
-    pub end_date: Date, 
+    pub end_date: Date,
     pub initial_bird_count: i32,
     pub current_bird_count: Option<i32>,
-    pub status: BatchStatus, 
+    pub status: BatchStatus,
     pub created_at: DateTimeWithTimeZone,
 }
 

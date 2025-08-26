@@ -4,8 +4,10 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use entity::{batch_requirements, inventory, inventory_movements, sea_orm_active_enums::MovementType};
 use entity::{batch_allocations, sea_orm_active_enums::RequirementStatus};
+use entity::{
+    batch_requirements, inventory, inventory_movements, sea_orm_active_enums::MovementType,
+};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use sea_orm::{DatabaseTransaction, IntoActiveModel, TransactionTrait};
 

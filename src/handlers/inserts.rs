@@ -122,7 +122,7 @@ pub async fn create_purchase(
 
     // Credit → chosen account (Cash / Payables etc.)
     let credit_entry = ledger_entries::ActiveModel {
-        transaction_type: Set(payload.payment_account.clone()), 
+        transaction_type: Set(payload.payment_account.clone()),
         debit: Set(None),
         credit: Set(total_cost),
         txn_date: Set(purchase.purchase_date),

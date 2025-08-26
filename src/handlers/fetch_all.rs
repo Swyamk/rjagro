@@ -364,9 +364,7 @@ pub async fn get_supervisors_handler(State(db): State<DatabaseConnection>) -> im
 }
 
 // INVENTORY
-pub async fn get_inventory_handler(
-    State(db): State<DatabaseConnection>,
-) -> impl IntoResponse {
+pub async fn get_inventory_handler(State(db): State<DatabaseConnection>) -> impl IntoResponse {
     match inventory::Entity::find().all(&db).await {
         Ok(data) => Json(data).into_response(),
         Err(e) => {
@@ -388,9 +386,7 @@ pub async fn get_inventory_movements_handler(
     }
 }
 
-pub async fn get_ledger_entries_handler(
-    State(db): State<DatabaseConnection>,
-) -> impl IntoResponse {
+pub async fn get_ledger_entries_handler(State(db): State<DatabaseConnection>) -> impl IntoResponse {
     match ledger_entries::Entity::find().all(&db).await {
         Ok(data) => Json(data).into_response(),
         Err(e) => {
