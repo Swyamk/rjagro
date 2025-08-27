@@ -25,9 +25,13 @@ import { fetchInventory, handleAddInventory, handleUpdateInventory } from '../ap
 import InventoryTable from '../components/tables/inventory';
 import { fetchInventoryMovements, handleAddInventoryMovement } from '../api/inventory_movement';
 import InventoryMovementsTable from '../components/tables/inventory_movement';
-import { BatchPayload, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchRequirement, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerEntry, NewPurchase, NewTrader, ProductionLinePayload, SupplierPayload, SupplierType } from '../types/interfaces';
+import { BatchAllocationLinePayload, BatchPayload, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
 import { fetchLedgerEntries, handleAddLedgerEntry } from '../api/ledger_entries';
 import LedgerEntriesTable from '../components/tables/ledger_entries';
+import { fetchStockReceipts, handleAddStockReceipt } from '../api/stock_receipts';
+import StockReceiptsTable from '../components/tables/stock_receipts';
+import { fetchBatchAllocationLines, handleAddBatchAllocationLine, handleDeleteBatchAllocationLine } from '../api/batch_allocation_lines';
+import BatchAllocationLinesTable from '../components/tables/batch_allocation_line';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -35,7 +39,7 @@ const Dashboard = () => {
 
 
     const [activeTab, setActiveTab] = useState('Purchases');
-    const { data: purchases = [], 
+    const { data: purchases = [],
         // isLoading: loadingPurchases 
     } = useQuery({
         queryKey: ['purchases'],
@@ -68,7 +72,7 @@ const Dashboard = () => {
     // items
     const { data: items = [],
         //  isLoading: loadingItems 
-        } = useQuery({
+    } = useQuery({
         queryKey: ['items'],
         queryFn: fetchItems,
         staleTime: 5 * 60 * 1000, // 5 minutes cache
@@ -83,7 +87,7 @@ const Dashboard = () => {
     // Farmers state
     const { data: farmers = [],
         //  isLoading: loadingFarmers 
-        } = useQuery({
+    } = useQuery({
         queryKey: ["farmers"],
         queryFn: fetchFarmers,
         staleTime: 5 * 60 * 1000,
@@ -99,7 +103,7 @@ const Dashboard = () => {
     });
 
     //Suppliers state
-    const { data: suppliers = [], 
+    const { data: suppliers = [],
         // isLoading: loadingSuppliers 
     } = useQuery({
         queryKey: ['suppliers'],
@@ -117,9 +121,9 @@ const Dashboard = () => {
     });
 
     // Traders state
-    const { data: traders = [], 
+    const { data: traders = [],
         // isLoading: loadingTraders
-     } = useQuery({
+    } = useQuery({
         queryKey: ['traders'],
         queryFn: fetchTraders,
         staleTime: 5 * 60 * 1000, // cache for 5 minutes
@@ -143,7 +147,7 @@ const Dashboard = () => {
 
     const { data: productionLines = [],
         //  isLoading: loadingProductionLines 
-        } = useQuery({
+    } = useQuery({
         queryKey: ['production_lines'],
         queryFn: fetchProductionLines,
         staleTime: 5 * 60 * 1000,
@@ -151,7 +155,7 @@ const Dashboard = () => {
 
     const { data: supervisors = [],
         //  isLoading: loadingSupervisors
-         } = useQuery({
+    } = useQuery({
         queryKey: ['supervisors'],
         queryFn: fetchSupervisors,
         staleTime: 5 * 60 * 1000,
@@ -162,7 +166,7 @@ const Dashboard = () => {
     };
 
     // Batches state
-    const { data: batches = [], 
+    const { data: batches = [],
         // isLoading: loadingBatches 
     } = useQuery({
         queryKey: ["batches"],
@@ -181,7 +185,7 @@ const Dashboard = () => {
     });
 
     // Requirements state
-    const { data: requirements = [], 
+    const { data: requirements = [],
         // isLoading: loadingRequirements 
     } = useQuery({
         queryKey: ["batch_requirements"],
@@ -200,14 +204,14 @@ const Dashboard = () => {
     // Batch Allocations state
     const { data: allocations = [],
         //  isLoading: loadingAllocations 
-        } = useQuery({
+    } = useQuery({
         queryKey: ["batch_allocations"],
         queryFn: fetchBatchAllocations,
         staleTime: 5 * 60 * 1000,
     });
 
     // Inventory state
-    const { data: inventory = [], 
+    const { data: inventory = [],
         // isLoading: loadingInventory 
     } = useQuery({
         queryKey: ['inventory'],
@@ -245,7 +249,7 @@ const Dashboard = () => {
     };
 
     // Fetch inventory movements
-    const { data: inventoryMovements = [], 
+    const { data: inventoryMovements = [],
         // isLoading: loadingInventoryMovements 
     } = useQuery({
         queryKey: ["inventory_movements"],
@@ -280,9 +284,9 @@ const Dashboard = () => {
     };
 
     // Ledger Entries state
-    const { data: ledgerEntries = [], 
+    const { data: ledgerEntries = [],
         // isLoading: loadingLedgerEntries
-     } = useQuery({
+    } = useQuery({
         queryKey: ["ledger_entries"],
         queryFn: fetchLedgerEntries,
         staleTime: 5 * 60 * 1000,
@@ -308,10 +312,53 @@ const Dashboard = () => {
         created_by: user ? user.user_id : undefined,
     };
 
+    // Stock Receipts state
+    const { data: stockReceipts = [], 
+        // isLoading: loadingStockReceipts 
+    } = useQuery({
+        queryKey: ['stock_receipts'],
+        queryFn: fetchStockReceipts,
+        staleTime: 5 * 60 * 1000, // 5 minutes cache
+    });
+
+    const [newStockReceipt, setNewStockReceipt] = useState<NewStockReceipt>({
+        purchase_id: '',
+        item_code: '',
+        item_name: '',
+        received_qty: '',
+        remaining_qty: '',
+        unit_cost: '',
+        received_date: new Date().toISOString().slice(0, 10),
+        supplier: ''
+    });
+
+    //  batch allocation lines
+    const { data: allocationLines = [], 
+        // isLoading: loadingAllocationLines
+     } = useQuery({
+        queryKey: ["batch_allocation_lines"],
+        queryFn: fetchBatchAllocationLines,
+        staleTime: 5 * 60 * 1000,
+    });
+    const [newAllocationLine, setNewAllocationLine] = useState<NewBatchAllocationLine>({
+        allocation_id: '',
+        lot_id: '',
+        qty: '',
+        unit_cost: ''
+    });
+
+    const finalAllocationLine: BatchAllocationLinePayload = {
+        allocation_id: Number(newAllocationLine.allocation_id),
+        lot_id: Number(newAllocationLine.lot_id),
+        qty: Number(newAllocationLine.qty),
+        unit_cost: Number(newAllocationLine.unit_cost),
+        line_value: Number(newAllocationLine.qty) * Number(newAllocationLine.unit_cost)
+    };
+
 
 
     const tabs = [
-        'Users','Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Batches', 'Batch Requirements',
+        'Users', 'Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Stock Receipts', 'Batch Allocation Lines', 'Batches', 'Batch Requirements',
         'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
     ];
 
@@ -326,6 +373,44 @@ const Dashboard = () => {
                 item_name: selectedItem.item_name
             }));
         }
+    };
+    const handleStockReceiptItemCodeSelect = (itemCode: string) => {
+        const selectedItem = items.find(item => item.item_code === itemCode);
+        if (selectedItem) {
+            setNewStockReceipt(prev => ({
+                ...prev,
+                item_code: itemCode,
+                item_name: selectedItem.item_name
+            }));
+        }
+    };
+
+    const handleStockReceiptPurchaseSelect = (purchaseId: string) => {
+        const selectedPurchase = purchases.find(purchase => purchase.purchase_id === parseInt(purchaseId));
+        if (selectedPurchase) {
+            setNewStockReceipt(prev => ({
+                ...prev,
+                purchase_id: parseInt(purchaseId),
+                item_code: selectedPurchase.item_code,
+                item_name: selectedPurchase.item_name,
+                unit_cost: selectedPurchase.cost_per_unit,
+                supplier: selectedPurchase.supplier
+            }));
+        } else {
+            setNewStockReceipt(prev => ({
+                ...prev,
+                purchase_id: purchaseId ? parseInt(purchaseId) : ''
+            }));
+        }
+    };
+
+    const finalStockReceipt: StockReceiptPayload = {
+        purchase_id: newStockReceipt.purchase_id ? Number(newStockReceipt.purchase_id) : undefined,
+        item_code: newStockReceipt.item_code,
+        received_qty: Number(newStockReceipt.received_qty),
+        unit_cost: Number(newStockReceipt.unit_cost),
+        received_date: newStockReceipt.received_date,
+        supplier: newStockReceipt.supplier || undefined,
     };
 
     return (
@@ -545,6 +630,43 @@ const Dashboard = () => {
                     />
                 )}
 
+                {activeTab === 'Stock Receipts' && (
+                    <StockReceiptsTable
+                        stockReceipts={stockReceipts}
+                        items={items}
+                        purchases={purchases}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newStockReceipt={newStockReceipt}
+                        setShowAddForm={setShowAddForm}
+                        setNewStockReceipt={setNewStockReceipt}
+                        handleItemCodeSelect={handleStockReceiptItemCodeSelect}
+                        handlePurchaseSelect={handleStockReceiptPurchaseSelect}
+                        handleAddStockReceipt={() =>
+                            handleAddStockReceipt(finalStockReceipt, queryClient, setLoading)
+                        }
+                    />
+                )}
+
+                {activeTab === 'Batch Allocation Lines' && (
+                    <BatchAllocationLinesTable
+                        allocationLines={allocationLines}
+                        batchAllocations={allocations}
+                        stockReceipts={stockReceipts}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newAllocationLine={newAllocationLine}
+                        setShowAddForm={setShowAddForm}
+                        setNewAllocationLine={setNewAllocationLine}
+                        handleAddAllocationLine={() =>
+                            handleAddBatchAllocationLine(finalAllocationLine, queryClient, setLoading)
+                        }
+                        handleDeleteAllocationLine={(id) =>
+                            handleDeleteBatchAllocationLine(id, queryClient)
+                        }
+                    />
+                )}
+
                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
                     activeTab !== 'Traders' &&
                     activeTab !== 'Production Lines' &&
@@ -553,7 +675,10 @@ const Dashboard = () => {
                     activeTab !== 'Batch Allocations' &&
                     activeTab !== 'Inventory' &&
                     activeTab !== 'Inventory Movements' &&
-                    activeTab !== 'Ledger Entries' && (
+                    activeTab !== 'Ledger Entries' &&
+                    activeTab !== 'Stock Receipts' &&
+                    activeTab !== 'Batch Allocation Lines' && (
+
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
                             <p className="text-gray-600">This section is under development</p>

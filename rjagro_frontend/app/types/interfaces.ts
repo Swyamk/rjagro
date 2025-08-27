@@ -280,3 +280,66 @@ export interface NewLedgerEntry {
   reference_id: number | '';
   narration: string;
 }
+
+export interface StockReceiptPayload {
+  purchase_id?: number;
+  item_code: string;
+  received_qty: number;
+  unit_cost: number;
+  received_date: string;
+  supplier?: string;
+}
+
+
+export interface StockReceipt {
+    lot_id: number;
+    purchase_id?: number;
+    item_code: string;
+    item_name?: string;
+    received_qty: number;
+    remaining_qty: number;
+    unit_cost: number;
+    received_date: string;
+    supplier?: string;
+}
+
+export interface NewStockReceipt {
+    purchase_id: number | '';
+    item_code: string;
+    item_name: string;
+    received_qty: number | '';
+    remaining_qty: number | '';
+    unit_cost: number | '';
+    received_date: string;
+    supplier: string;
+}
+
+export interface BatchAllocationLine {
+  allocation_line_id: number;
+  allocation_id: number;
+  lot_id: number;
+  qty: number;
+  unit_cost: number;
+  line_value: number;
+  // Related data for display
+  allocation_date?: string;
+  requirement_id?: number;
+  item_code?: string;
+  item_name?: string;
+  lot_number?: string;
+}
+
+export interface BatchAllocationLinePayload {
+  allocation_id: number;
+  lot_id: number;
+  qty: number;
+  unit_cost: number;
+  line_value: number;
+}
+
+export interface NewBatchAllocationLine {
+  allocation_id: number | '';
+  lot_id: number | '';
+  qty: number | '';
+  unit_cost: number | '';
+}
