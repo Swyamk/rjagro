@@ -20,7 +20,8 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const prevHeaders = config.headers as unknown;
 
     if (prevHeaders && typeof (prevHeaders as any).set === "function") {
-        (prevHeaders as any).set("Authorization", `Bearer ${token}`);
+        // in production, add Bearer prefix
+        (prevHeaders as any).set("Authorization", `${token}`);
         config.headers = prevHeaders as AxiosRequestHeaders;
         // console.log("Headers after setting token:", config.headers);
     } else {

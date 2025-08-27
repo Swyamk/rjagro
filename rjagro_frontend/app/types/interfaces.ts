@@ -172,6 +172,7 @@ export interface BatchAllocation {
   requirement_id: number;
   allocated_qty: string;
   allocation_date: string;
+  allocated_value: string;
   allocated_by: number;
 }
 

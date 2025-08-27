@@ -49,6 +49,9 @@ const BatchAllocationsTable: React.FC<BatchAllocationsTableProps> = ({
                             Allocated Quantity
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Allocated Value
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Allocation Date
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -83,6 +86,9 @@ const BatchAllocationsTable: React.FC<BatchAllocationsTableProps> = ({
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {allocation.allocated_qty}
+                                </td>
+                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {allocation.allocated_value}
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {allocation.allocation_date}
