@@ -50,6 +50,22 @@ pub async fn create_purchase(
         eprintln!("Failed to insert purchase: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    let new_receipt = stock_receipts::ActiveModel {
+        purchase_id: Set(Some(purchase.purchase_id)),
+        item_code: Set(payload.item_code.clone()),
+        received_qty: Set(payload.quantity),
+        remaining_qty: Set(payload.quantity),
+        unit_cost: Set(payload.cost_per_unit),
+        received_date: Set(payload.purchase_date),
+        supplier: Set(payload.supplier.clone()),
+        ..Default::default()
+    };
+
+    let receipt = new_receipt.insert(&txn).await.map_err(|err| {
+        eprintln!("Failed to insert stock_receipt: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+    println!("DEBUG: inserted stock_receipt within txn: {:?}", receipt);
 
     // Insert/Update inventory
     if let Some(inv) = inventory::Entity::find_by_id(payload.item_code.clone())

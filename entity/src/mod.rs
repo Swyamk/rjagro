@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod batch_allocation_lines;
 pub mod batch_allocations;
 pub mod batch_requirements;
 pub mod batches;
@@ -16,6 +17,7 @@ pub mod post;
 pub mod production_lines;
 pub mod purchases;
 pub mod sea_orm_active_enums;
+pub mod stock_receipts;
 pub mod suppliers;
 pub mod traders;
 pub mod users;

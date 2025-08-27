@@ -12,6 +12,7 @@ pub struct Model {
     #[sea_orm(column_type = "Decimal(Some((12, 2)))")]
     pub allocated_qty: Decimal,
     pub allocation_date: Date,
+    pub allocated_value: Decimal,
     pub allocated_by: i32,
 }
 

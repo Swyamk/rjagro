@@ -145,7 +145,11 @@ impl MigrationTrait for Migration {
                     .col(string_len(Purchases::ItemCode, 100).not_null())
                     .col(decimal_len(Purchases::CostPerUnit, 12, 2).not_null())
                     .col(decimal_len(Purchases::TotalCost, 12, 2))
-                    .col(decimal_len(Purchases::Quantity, 12, 2).not_null().default(0))
+                    .col(
+                        decimal_len(Purchases::Quantity, 12, 2)
+                            .not_null()
+                            .default(0),
+                    )
                     .col(date(Purchases::PurchaseDate).not_null())
                     .col(string_len(Purchases::Supplier, 100))
                     .col(integer(Purchases::CreatedBy))
@@ -562,7 +566,7 @@ enum ProductionLines {
 }
 
 #[derive(DeriveIden)]
-enum Purchases {
+pub enum Purchases {
     Table,
     PurchaseId,
     ItemCode,
@@ -603,7 +607,7 @@ enum BatchRequirements {
 }
 
 #[derive(DeriveIden)]
-enum BatchAllocations {
+pub enum BatchAllocations {
     Table,
     AllocationId,
     RequirementId,

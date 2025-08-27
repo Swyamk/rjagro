@@ -4,11 +4,18 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use entity::{batch_allocations, sea_orm_active_enums::RequirementStatus};
+use entity::{
+    batch_allocation_lines, batch_allocations, sea_orm_active_enums::RequirementStatus,
+    stock_receipts,
+};
 use entity::{
     batch_requirements, inventory, inventory_movements, sea_orm_active_enums::MovementType,
 };
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::ColumnTrait;
+use sea_orm::{
+    prelude::Decimal, ActiveModelTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder,
+    Set,
+};
 use sea_orm::{DatabaseTransaction, IntoActiveModel, TransactionTrait};
 
 use crate::models::{ApprovePayload, ResponseMessage};
@@ -113,6 +120,7 @@ async fn approve_and_allocate(
         requirement_id: Set(payload.requirement_id),
         allocated_qty: Set(payload.allocated_qty),
         allocation_date: Set(payload.allocation_date),
+        allocated_value: Set(Decimal::ZERO), // to be updated after FIFO allocation
         allocated_by: Set(payload.allocated_by),
     };
 
@@ -165,6 +173,71 @@ async fn approve_and_allocate(
         .insert(txn)
         .await
         .map_err(|e| format!("Failed to insert inventory movement: {}", e))?;
+
+    // -----------------------------------------------------------
+    // 6. FIFO allocation from stock_receipts -> batch_allocation_lines
+    // -----------------------------------------------------------
+    let mut qty_to_allocate = payload.allocated_qty;
+    let mut total_value = Decimal::ZERO;
+
+    // fetch lots in FIFO order
+    let receipts = stock_receipts::Entity::find()
+        .filter(stock_receipts::Column::ItemCode.eq(requirement.item_code.clone()))
+        .filter(stock_receipts::Column::RemainingQty.gt(Decimal::ZERO))
+        .order_by_asc(stock_receipts::Column::ReceivedDate)
+        .order_by_asc(stock_receipts::Column::LotId)
+        .all(txn)
+        .await
+        .map_err(|e| format!("Failed to fetch stock receipts: {}", e))?;
+
+    for r in receipts {
+        if qty_to_allocate <= Decimal::ZERO {
+            break;
+        }
+
+        let take = std::cmp::min(r.remaining_qty, qty_to_allocate);
+        let line_value = take * r.unit_cost;
+
+        // insert allocation line
+        let line = batch_allocation_lines::ActiveModel {
+            allocation_line_id: Default::default(),
+            allocation_id: Set(allocation_model.allocation_id),
+            lot_id: Set(r.lot_id),
+            qty: Set(take),
+            unit_cost: Set(r.unit_cost),
+            line_value: Set(line_value),
+        };
+        line.insert(txn)
+            .await
+            .map_err(|e| format!("Failed to insert allocation line: {}", e))?;
+
+        // update lot remaining qty
+        let mut r_active: stock_receipts::ActiveModel = r.into();
+        r_active.remaining_qty = Set(r_active.remaining_qty.take().unwrap() - take);
+        r_active
+            .update(txn)
+            .await
+            .map_err(|e| format!("Failed to update stock_receipt: {}", e))?;
+
+        total_value += line_value;
+        qty_to_allocate -= take;
+    }
+
+    // update allocation with monetary worth
+    let mut alloc_update: batch_allocations::ActiveModel = allocation_model.clone().into();
+    alloc_update.allocated_value = Set(total_value);
+    alloc_update
+        .update(txn)
+        .await
+        .map_err(|e| format!("Failed to update allocation value: {}", e))?;
+
+    if qty_to_allocate > Decimal::ZERO {
+        // not enough stock: business decision → error, negative stock, or backorder
+        return Err(format!(
+            "Partial allocation: shortage of {} units for item {}",
+            qty_to_allocate, requirement.item_code
+        ));
+    }
 
     Ok(format!(
         "Requirement {} approved, allocation created, inventory updated, and movement logged",

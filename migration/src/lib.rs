@@ -4,6 +4,7 @@ mod m20220101_000001_create_table;
 mod m20250810_161418_iteration1;
 mod m20250819_083602_iteration_2;
 mod m20250819_215006_ledger;
+mod m20250826_234204_stock_receipts;
 
 pub struct Migrator;
 
@@ -15,6 +16,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250810_161418_iteration1::Migration),
             Box::new(m20250819_083602_iteration_2::Migration),
             Box::new(m20250819_215006_ledger::Migration),
+            Box::new(m20250826_234204_stock_receipts::Migration),
         ]
     }
 }
