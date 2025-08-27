@@ -395,3 +395,27 @@ pub async fn get_ledger_entries_handler(State(db): State<DatabaseConnection>) ->
         }
     }
 }
+
+pub async fn get_batch_allocation_lines_handler(
+    State(db): State<DatabaseConnection>,
+) -> impl IntoResponse {
+    match batch_allocation_lines::Entity::find().all(&db).await {
+        Ok(data) => Json(data).into_response(),
+        Err(e) => {
+            eprintln!("Failed to fetch batch allocation lines: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+pub async fn get_stock_receipts_handler(
+    State(db): State<DatabaseConnection>,
+) -> Result<Json<Vec<stock_receipts::Model>>, StatusCode> {
+    match stock_receipts::Entity::find().all(&db).await {
+        Ok(data) => Ok(Json(data)),
+        Err(e) => {
+            eprintln!("Failed to fetch stock receipts: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}

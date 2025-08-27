@@ -4,10 +4,11 @@ use sea_orm::DatabaseConnection;
 use crate::{
     auth::middleware::{require_roles_middleware, RequireRoles},
     handlers::fetch_all::{
-        get_batch_allocations_handler, get_batch_requirements_handler, get_batches_handler,
-        get_bird_count_history_handler, get_bird_sell_history_handler, get_farmers_handler,
-        get_inventory_handler, get_inventory_movements_handler, get_items_handler,
-        get_ledger_entries_handler, get_production_lines_handler, get_purchases_handler,
+        get_batch_allocation_lines_handler, get_batch_allocations_handler,
+        get_batch_requirements_handler, get_batches_handler, get_bird_count_history_handler,
+        get_bird_sell_history_handler, get_farmers_handler, get_inventory_handler,
+        get_inventory_movements_handler, get_items_handler, get_ledger_entries_handler,
+        get_production_lines_handler, get_purchases_handler, get_stock_receipts_handler,
         get_supervisors_handler, get_suppliers_handler, get_traders_handler, get_users_handler,
     },
 };
@@ -18,6 +19,11 @@ pub fn fetch_all() -> Router<DatabaseConnection> {
         .route("/users", get(get_users_handler))
         .route("/supervisors", get(get_supervisors_handler))
         .route("/ledger_entries", get(get_ledger_entries_handler))
+        .route("/stock_receipts", get(get_stock_receipts_handler))
+        .route(
+            "/batch_allocation_lines",
+            get(get_batch_allocation_lines_handler),
+        )
         .layer(middleware::from_fn_with_state(
             RequireRoles::new(&[UserRole::Admin]),
             require_roles_middleware,
