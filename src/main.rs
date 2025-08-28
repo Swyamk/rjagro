@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::http::{self, HeaderValue};
 use axum::routing::post;
 use axum::{routing::get, Router};
-// use migration::{Migrator, MigratorTrait};
+use migration::{Migrator, MigratorTrait};
 use reqwest::Method;
 use sea_orm::{Database, DatabaseConnection};
 use shuttle_runtime::SecretStore;
@@ -37,15 +37,15 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
     // Migrator::up(&db, None)
     //     .await
     //     .expect("Migration failed");
-    // Migrator::fresh(&db).await.expect("failllled");
+    Migrator::fresh(&db).await.expect("failllled");
 
     // 4. Build router
     let shared_secrets = Arc::new(secret_store);
 
     let cors = CorsLayer::new()
-        // .allow_origin("https://rjagro.vercel.app".parse::<HeaderValue>().unwrap())
-        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
-        .allow_methods([Method::GET, Method::POST,Method::PUT, Method::OPTIONS])
+        .allow_origin("https://rjagro.vercel.app".parse::<HeaderValue>().unwrap())
+        // .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::OPTIONS])
         .allow_headers([
             http::header::CONTENT_TYPE,
             http::header::ACCEPT,
@@ -54,7 +54,7 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
         .allow_credentials(true);
 
     let router = Router::new()
-        .nest("/admin",admin())
+        .nest("/admin", admin())
         .nest("/getall", fetch_all())
         .nest("/insert", insert_routes())
         .route("/", get(hello_world))

@@ -44,7 +44,8 @@ pub struct CreatePurchase {
     pub supplier: Option<String>,
     pub quantity: Decimal,
     pub created_by: Option<i32>,
-    pub payment_account: LedgerAccountType,
+    pub inventory_account_id: i32,
+    pub payment_account_id: i32,
 }
 
 #[derive(Deserialize)]

@@ -21,3 +21,4 @@ pub mod stock_receipts;
 pub mod suppliers;
 pub mod traders;
 pub mod users;
+pub mod ledger_accounts;

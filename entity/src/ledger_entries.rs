@@ -1,7 +1,6 @@
 use sea_orm::entity::prelude::*;
 use serde::Serialize;
-
-use crate::sea_orm_active_enums::LedgerAccountType;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize)]
 #[sea_orm(table_name = "ledger_entries")]
@@ -10,7 +9,8 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub entry_id: i32,
 
-    pub transaction_type: LedgerAccountType,
+    /// reference to ledger_accounts.account_id
+    pub account_id: i32,
 
     /// Debit amount
     #[sea_orm(column_type = "Decimal(Some((18, 2)))")]
@@ -32,6 +32,9 @@ pub struct Model {
     /// Narration / notes
     pub narration: Option<String>,
 
+    /// Grouping UUID to tie the two sides of a transaction together
+    pub txn_group_id: Uuid,
+
     /// Metadata
     pub created_at: DateTimeWithTimeZone,
     pub created_by: Option<i32>,
@@ -40,6 +43,15 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
+        belongs_to = "super::ledger_accounts::Entity",
+        from = "Column::AccountId",
+        to = "super::ledger_accounts::Column::AccountId",
+        on_update = "Cascade",
+        on_delete = "Cascade"
+    )]
+    LedgerAccount,
+
+    #[sea_orm(
         belongs_to = "super::users::Entity",
         from = "Column::CreatedBy",
         to = "super::users::Column::UserId",
@@ -47,6 +59,12 @@ pub enum Relation {
         on_delete = "SetNull"
     )]
     Users,
+}
+
+impl Related<super::ledger_accounts::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::LedgerAccount.def()
+    }
 }
 
 impl Related<super::users::Entity> for Entity {
