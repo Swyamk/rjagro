@@ -56,6 +56,14 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+        ALTER SEQUENCE ledger_accounts_account_id_seq RESTART WITH 101;
+        "#,
+            )
+            .await?;
 
         // unique index on account name
         manager

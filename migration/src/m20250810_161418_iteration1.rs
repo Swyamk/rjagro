@@ -292,6 +292,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(BatchAllocations::AllocationId))
                     .col(integer(BatchAllocations::RequirementId).not_null())
                     .col(decimal_len(BatchAllocations::AllocatedQty, 12, 2).not_null())
+                    .col(decimal_len(BatchAllocations::AllocatedValue, 18, 2).not_null())
                     .col(date(BatchAllocations::AllocationDate).not_null())
                     .col(integer(BatchAllocations::AllocatedBy).not_null())
                     .foreign_key(
@@ -612,6 +613,7 @@ pub enum BatchAllocations {
     AllocationId,
     RequirementId,
     AllocatedQty,
+    AllocatedValue,
     AllocationDate,
     AllocatedBy,
 }

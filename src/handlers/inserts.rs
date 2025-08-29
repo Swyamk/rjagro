@@ -20,8 +20,6 @@ pub async fn create_production_line(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
-/// Purchases
-
 pub async fn create_item(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<CreateItem>,
@@ -214,4 +212,21 @@ pub async fn create_bird_sell_history(
         .await
         .map(Json)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+pub async fn create_ledger_account(
+    State(db): State<DatabaseConnection>,
+    Json(payload): Json<CreateLedgerAccount>,
+) -> Result<Json<ledger_accounts::Model>, StatusCode> {
+    let new_account = ledger_accounts::ActiveModel {
+        name: Set((payload.name).to_lowercase()),
+        account_type: Set(payload.account_type),
+        current_balance: Set(payload.current_balance),
+        ..Default::default()
+    };
+
+    new_account.insert(&db).await.map(Json).map_err(|err| {
+        eprintln!("Failed to insert ledger account: {:?}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })
 }

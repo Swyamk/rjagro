@@ -419,3 +419,15 @@ pub async fn get_stock_receipts_handler(
         }
     }
 }
+
+pub async fn get_ledger_accounts_handler(
+    State(db): State<DatabaseConnection>,
+) -> Result<Json<Vec<ledger_accounts::Model>>, StatusCode> {
+    match ledger_accounts::Entity::find().all(&db).await {
+        Ok(data) => Ok(Json(data)),
+        Err(e) => {
+            eprintln!("Failed to fetch ledger accounts: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}

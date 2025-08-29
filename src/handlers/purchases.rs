@@ -2,7 +2,9 @@ use crate::models::CreatePurchase;
 use axum::{extract::State, Json};
 use chrono::Utc;
 use entity::sea_orm_active_enums::MovementType;
-use entity::{inventory, inventory_movements, ledger_accounts, ledger_entries, purchases, stock_receipts};
+use entity::{
+    inventory, inventory_movements, ledger_accounts, ledger_entries, purchases, stock_receipts,
+};
 use reqwest::StatusCode;
 use sea_orm::prelude::Decimal;
 use sea_orm::ActiveModelTrait;
@@ -145,7 +147,6 @@ async fn insert_ledger_entries<C: TransactionTrait + sea_orm::ConnectionTrait>(
     let total_cost = payload.total_cost;
     let txn_group_id = Uuid::new_v4();
 
-    
     let inventory_account_id = payload.inventory_account_id;
     let payment_account_id = payload.payment_account_id;
 
@@ -201,6 +202,7 @@ async fn insert_ledger_entries<C: TransactionTrait + sea_orm::ConnectionTrait>(
 
     Ok(())
 }
+
 async fn update_account_balance<C: TransactionTrait + sea_orm::ConnectionTrait>(
     txn: &C,
     account_id: i32,
@@ -213,32 +215,44 @@ async fn update_account_balance<C: TransactionTrait + sea_orm::ConnectionTrait>(
         .await
         .map_err(internal_error("fetch ledger account"))?
     {
-        let mut active_account: ledger_accounts::ActiveModel = account.into();
+        let mut active_account: ledger_accounts::ActiveModel = account.clone().into();
 
-        // 2. Adjust balance
         let current_balance = active_account.current_balance.take().unwrap_or_default();
+        let amount = amount.unwrap_or_default();
 
-        let new_balance = if is_debit {
-            current_balance + amount.unwrap_or_default()
-        } else {
-            current_balance - amount.unwrap_or_default()
+        // Decide effect based on account type
+        use entity::sea_orm_active_enums::LedgerAccountType;
+        let new_balance = match account.account_type {
+            LedgerAccountType::Asset | LedgerAccountType::Expense => {
+                if is_debit {
+                    current_balance + amount
+                } else {
+                    current_balance - amount
+                }
+            }
+            LedgerAccountType::Liability
+            | LedgerAccountType::Equity
+            | LedgerAccountType::Revenue => {
+                if is_debit {
+                    current_balance - amount
+                } else {
+                    current_balance + amount
+                }
+            }
         };
 
         active_account.current_balance = Set(new_balance);
 
-        // 3. Save update
         active_account
             .update(txn)
             .await
             .map_err(internal_error("update ledger account balance"))?;
-
     } else {
-        return Err(StatusCode::BAD_REQUEST); 
+        return Err(StatusCode::BAD_REQUEST);
     }
 
     Ok(())
 }
-
 
 fn internal_error<E: std::fmt::Display>(action: &'static str) -> impl FnOnce(E) -> StatusCode {
     move |err| {

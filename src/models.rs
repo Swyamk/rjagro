@@ -185,3 +185,9 @@ pub struct ApprovePayload {
     pub allocation_date: NaiveDate,
     pub allocated_by: i32,
 }
+#[derive(Debug, Deserialize)]
+pub struct CreateLedgerAccount {
+    pub name: String,
+    pub account_type: LedgerAccountType,
+    pub current_balance: Decimal,
+}
