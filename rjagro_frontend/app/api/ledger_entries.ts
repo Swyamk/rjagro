@@ -13,7 +13,6 @@ export const handleAddLedgerEntry = async (
     onSuccess?: () => void
 ) => {
     if (
-        !payload.transaction_type ||
         !payload.txn_date ||
         (!payload.debit && !payload.credit) ||
         (payload.debit && payload.credit)

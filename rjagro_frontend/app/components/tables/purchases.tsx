@@ -2,17 +2,23 @@ import React from 'react';
 import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
 import { calculateTotalCost } from '../../utils/helper';
 import { Item, LedgerAccountType, NewPurchase, Purchase } from '@/app/types/interfaces';
+import { INVENTORY_ACCOUNT_MAP, PAYMENT_ACCOUNT_MAP } from '@/app/types/constants';
 
-// Remove local enum definition if imported from types
+
+interface ExtendedNewPurchase extends NewPurchase {
+  category?: string;
+  inventory_account_id?: number;
+  payment_account_id?: number;
+}
 
 interface PurchasesTableProps {
     purchases: Purchase[];
     items: Item[];
     loading: boolean;
     showAddForm: boolean;
-    newPurchase: NewPurchase;
+    newPurchase: ExtendedNewPurchase;
     setShowAddForm: (show: boolean) => void;
-    setNewPurchase: React.Dispatch<React.SetStateAction<NewPurchase>>;
+    setNewPurchase: React.Dispatch<React.SetStateAction<ExtendedNewPurchase>>;
     handleItemCodeSelect: (itemCode: string) => void;
     handleAddPurchase: () => void;
 }
@@ -30,12 +36,31 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
 }) => {
     const handlePaymentMethodChange = (paymentMethod: string) => {
         const paymentAccount = paymentMethod === 'Cash' ? LedgerAccountType.Asset : LedgerAccountType.Liability;
+        const paymentAccountId = PAYMENT_ACCOUNT_MAP[paymentMethod as keyof typeof PAYMENT_ACCOUNT_MAP];
+        
         setNewPurchase(prev => ({ 
             ...prev, 
             payment_method: paymentMethod,
-            payment_account: paymentAccount as LedgerAccountType | undefined
+            payment_account: paymentAccount as LedgerAccountType | undefined,
+            payment_account_id: paymentAccountId
         }));
     };
+
+    const handleCategoryChange = (category: string) => {
+        const inventoryAccountId = INVENTORY_ACCOUNT_MAP[category as keyof typeof INVENTORY_ACCOUNT_MAP];
+        
+        setNewPurchase(prev => ({
+            ...prev,
+            category: category,
+            inventory_account_id: inventoryAccountId
+        }));
+    };
+
+    const categories = [
+        { value: 'feed', label: 'Feed' },
+        { value: 'medicine', label: 'Medicine' },
+        { value: 'chicks', label: 'Chicks' }
+    ];
 
     return (
         <div className="bg-white rounded-lg shadow">
@@ -70,6 +95,24 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 text-black md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Category *
+                            </label>
+                            <select
+                                value={newPurchase.category || ''}
+                                onChange={(e) => handleCategoryChange(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                                <option value="">Select Category</option>
+                                {categories.map((category) => (
+                                    <option key={category.value} value={category.value}>
+                                        {category.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Item Code *
@@ -171,7 +214,8 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                         <div className="flex items-end">
                             <button
                                 onClick={handleAddPurchase}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                disabled={!newPurchase.category || !newPurchase.payment_method}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Save size={18} />
                                 Save Purchase

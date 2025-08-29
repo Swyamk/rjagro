@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react';
-import { fetchPurchases, handleAddPurchase, PurchasePayload } from '../api/purchases';
+import { fetchPurchases, handleAddPurchase } from '../api/purchases';
 import { fetchItems, handleAddItem } from '../api/items';
 import PurchasesTable from '../components/tables/purchases';
 import { useAuth } from '../hooks/useAuth';
@@ -25,13 +25,15 @@ import { fetchInventory, handleAddInventory, handleUpdateInventory } from '../ap
 import InventoryTable from '../components/tables/inventory';
 import { fetchInventoryMovements, handleAddInventoryMovement } from '../api/inventory_movement';
 import InventoryMovementsTable from '../components/tables/inventory_movement';
-import { BatchAllocationLinePayload, BatchPayload, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
+import { BatchAllocationLinePayload, BatchPayload, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerAccount, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, PurchasePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
 import { fetchLedgerEntries, handleAddLedgerEntry } from '../api/ledger_entries';
 import LedgerEntriesTable from '../components/tables/ledger_entries';
 import { fetchStockReceipts, handleAddStockReceipt } from '../api/stock_receipts';
 import StockReceiptsTable from '../components/tables/stock_receipts';
 import { fetchBatchAllocationLines, handleAddBatchAllocationLine, handleDeleteBatchAllocationLine } from '../api/batch_allocation_lines';
 import BatchAllocationLinesTable from '../components/tables/batch_allocation_line';
+import { fetchLedgerAccounts, handleAddLedgerAccount } from '../api/ledger_accounts';
+import LedgerAccountsTable from '../components/tables/ledger_accounts';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -55,7 +57,9 @@ const Dashboard = () => {
         quantity: '',
         supplier: '',
         payment_method: '',
-        payment_account: undefined
+        payment_account: undefined,
+        inventory_account_id: undefined,
+        payment_account_id: undefined
     });
 
     const final: PurchasePayload = {
@@ -68,7 +72,10 @@ const Dashboard = () => {
         payment_account: newPurchase.payment_account ?? LedgerAccountType.Asset,
         // fix this shit
         created_by: user ? user.user_id : 9999,
+        inventory_account_id: newPurchase.inventory_account_id!,  // Required field
+        payment_account_id: newPurchase.payment_account_id!
     };
+
     // items
     const { data: items = [],
         //  isLoading: loadingItems 
@@ -293,7 +300,7 @@ const Dashboard = () => {
     });
 
     const [newLedgerEntry, setNewLedgerEntry] = useState<NewLedgerEntry>({
-        transaction_type: '',
+        account_id: '',
         debit: '',
         credit: '',
         txn_date: new Date().toISOString().slice(0, 10),
@@ -301,8 +308,9 @@ const Dashboard = () => {
         reference_id: '',
         narration: ''
     });
+
     const finalLedgerEntry: LedgerEntryPayload = {
-        transaction_type: newLedgerEntry.transaction_type as LedgerAccountType,
+        account_id: Number(newLedgerEntry.account_id),
         debit: newLedgerEntry.debit ? Number(newLedgerEntry.debit) : undefined,
         credit: newLedgerEntry.credit ? Number(newLedgerEntry.credit) : undefined,
         txn_date: newLedgerEntry.txn_date,
@@ -313,7 +321,7 @@ const Dashboard = () => {
     };
 
     // Stock Receipts state
-    const { data: stockReceipts = [], 
+    const { data: stockReceipts = [],
         // isLoading: loadingStockReceipts 
     } = useQuery({
         queryKey: ['stock_receipts'],
@@ -333,9 +341,9 @@ const Dashboard = () => {
     });
 
     //  batch allocation lines
-    const { data: allocationLines = [], 
+    const { data: allocationLines = [],
         // isLoading: loadingAllocationLines
-     } = useQuery({
+    } = useQuery({
         queryKey: ["batch_allocation_lines"],
         queryFn: fetchBatchAllocationLines,
         staleTime: 5 * 60 * 1000,
@@ -355,10 +363,24 @@ const Dashboard = () => {
         line_value: Number(newAllocationLine.qty) * Number(newAllocationLine.unit_cost)
     };
 
+    // Ledger Accounts state
+    const { data: ledgerAccounts = [],
+        //  isLoading: loadingLedgerAccounts
+         } = useQuery({
+        queryKey: ['ledger_accounts'],
+        queryFn: fetchLedgerAccounts,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const [newLedgerAccount, setNewLedgerAccount] = useState<NewLedgerAccount>({
+        name: '',
+        account_type: '',
+        current_balance: ''
+    });
 
 
     const tabs = [
-        'Users', 'Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Stock Receipts', 'Batch Allocation Lines', 'Batches', 'Batch Requirements',
+        'Users', 'Ledger Accounts', 'Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Stock Receipts', 'Batch Allocation Lines', 'Batches', 'Batch Requirements',
         'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
     ];
 
@@ -608,6 +630,7 @@ const Dashboard = () => {
                 {activeTab === 'Ledger Entries' && (
                     <LedgerEntriesTable
                         ledgerEntries={ledgerEntries}
+                        ledgerAccounts={ledgerAccounts} // Add this line
                         loading={loading}
                         showAddForm={showAddForm}
                         newLedgerEntry={newLedgerEntry}
@@ -617,7 +640,7 @@ const Dashboard = () => {
                             handleAddLedgerEntry(finalLedgerEntry, queryClient, setLoading, () => {
                                 setShowAddForm(false);
                                 setNewLedgerEntry({
-                                    transaction_type: '',
+                                    account_id: '', // Updated field
                                     debit: '',
                                     credit: '',
                                     txn_date: new Date().toISOString().slice(0, 10),
@@ -667,6 +690,28 @@ const Dashboard = () => {
                     />
                 )}
 
+                {activeTab === 'Ledger Accounts' && (
+                    <LedgerAccountsTable
+                        ledgerAccounts={ledgerAccounts}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newLedgerAccount={newLedgerAccount}
+                        setShowAddForm={setShowAddForm}
+                        setNewLedgerAccount={setNewLedgerAccount}
+                        handleAddLedgerAccount={() =>
+                            handleAddLedgerAccount(
+                                {
+                                    name: newLedgerAccount.name,
+                                    account_type: newLedgerAccount.account_type,
+                                    current_balance: Number(newLedgerAccount.current_balance)
+                                },
+                                queryClient,
+                                setLoading
+                            )
+                        }
+                    />
+                )}
+
                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
                     activeTab !== 'Traders' &&
                     activeTab !== 'Production Lines' &&
@@ -677,7 +722,8 @@ const Dashboard = () => {
                     activeTab !== 'Inventory Movements' &&
                     activeTab !== 'Ledger Entries' &&
                     activeTab !== 'Stock Receipts' &&
-                    activeTab !== 'Batch Allocation Lines' && (
+                    activeTab !== 'Batch Allocation Lines' &&
+                    activeTab !== 'Ledger Accounts' && (
 
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>

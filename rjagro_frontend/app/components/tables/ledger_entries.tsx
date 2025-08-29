@@ -1,9 +1,11 @@
 import React from 'react';
-import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save, DollarSign } from 'lucide-react';
-import { LedgerAccountType, LedgerEntry, NewLedgerEntry } from '@/app/types/interfaces';
+import { Filter, ChevronLeft, ChevronRight, Plus, X, Save, DollarSign } from 'lucide-react';
+import { LedgerAccount, LedgerEntry, NewLedgerEntry } from '@/app/types/interfaces';
+import { capitalizeWords } from '@/app/utils/helper';
 
 interface LedgerEntriesTableProps {
     ledgerEntries: LedgerEntry[];
+    ledgerAccounts: LedgerAccount[]; // Added for account selection
     loading: boolean;
     showAddForm: boolean;
     newLedgerEntry: NewLedgerEntry;
@@ -14,6 +16,7 @@ interface LedgerEntriesTableProps {
 
 const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
     ledgerEntries,
+    ledgerAccounts,
     loading,
     showAddForm,
     newLedgerEntry,
@@ -21,20 +24,35 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
     setNewLedgerEntry,
     handleAddLedgerEntry,
 }) => {
+    const getAccountDetails = (account_id: number) => {
+        const account = ledgerAccounts.find(acc => acc.account_id === account_id);
+        return account ? { name: account.name, type: account.account_type } : { name: '-', type: '-' };
+    };
     const formatCurrency = (amount?: number) => {
         if (!amount || isNaN(amount)) return '-';
         return `₹${Number(amount).toFixed(2)}`;
     };
 
-    // const getBalanceColor = (entry: LedgerEntry) => {
-    //     if (entry.debit) return 'text-red-600';
-    //     if (entry.credit) return 'text-green-600';
-    //     return 'text-gray-600';
-    // };
+    const getAccountTypeColor = (accountType?: string) => {
+        switch (accountType?.toLowerCase()) {
+            case 'asset':
+                return 'bg-blue-100 text-blue-800';
+            case 'liability':
+                return 'bg-orange-100 text-orange-800';
+            case 'equity':
+                return 'bg-purple-100 text-purple-800';
+            case 'revenue':
+                return 'bg-green-100 text-green-800';
+            case 'expense':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
 
     const resetForm = () => {
         setNewLedgerEntry({
-            transaction_type: '',
+            account_id: '',
             debit: '',
             credit: '',
             txn_date: new Date().toISOString().slice(0, 10),
@@ -64,6 +82,24 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
             debit: '' // Clear debit when credit is entered
         }));
     };
+
+    const getAmountColor = (accountType?: string, amountType?: 'debit' | 'credit', amount?: number) => {
+        if (!amount || amount === 0) return 'text-gray-400';
+
+        switch (accountType?.toLowerCase()) {
+            case 'asset':
+            case 'expense':
+                return amountType === 'debit' ? 'text-green-600' : 'text-red-600';
+            case 'liability':
+            case 'equity':
+            case 'revenue':
+                return amountType === 'debit' ? 'text-red-600' : 'text-green-600';
+            default:
+                return 'text-gray-600';
+        }
+    };
+
+
 
     return (
         <div className="bg-white rounded-lg shadow">
@@ -103,17 +139,20 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-black">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Transaction Type *
+                                Account *
                             </label>
                             <select
-                                value={newLedgerEntry.transaction_type}
-                                onChange={(e) => setNewLedgerEntry(prev => ({ ...prev, transaction_type: e.target.value as LedgerAccountType }))}
+                                value={newLedgerEntry.account_id}
+                                onChange={(e) => setNewLedgerEntry(prev => ({
+                                    ...prev,
+                                    account_id: e.target.value ? parseInt(e.target.value) : ''
+                                }))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             >
-                                <option value="">Select Transaction Type</option>
-                                {Object.values(LedgerAccountType).map((type) => (
-                                    <option key={type} value={type}>
-                                        {type}
+                                <option value="">Select Account</option>
+                                {ledgerAccounts.map((account) => (
+                                    <option key={account.account_id} value={account.account_id}>
+                                        {account.name} ({account.account_type})
                                     </option>
                                 ))}
                             </select>
@@ -181,7 +220,10 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                             <input
                                 type="number"
                                 value={newLedgerEntry.reference_id}
-                                onChange={(e) => setNewLedgerEntry(prev => ({ ...prev, reference_id: e.target.value ? parseInt(e.target.value) : '' }))}
+                                onChange={(e) => setNewLedgerEntry(prev => ({
+                                    ...prev,
+                                    reference_id: e.target.value ? parseInt(e.target.value) : ''
+                                }))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                 placeholder="Reference record ID"
                             />
@@ -221,7 +263,10 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                                 Entry ID
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Type
+                                Account Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Account Type
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Date
@@ -239,23 +284,23 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                                 Narration
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created By
+                                Group ID
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
+                                Created By
                             </th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                                     Loading ledger entries...
                                 </td>
                             </tr>
                         ) : ledgerEntries.length === 0 ? (
                             <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                                     No ledger entries found
                                 </td>
                             </tr>
@@ -265,25 +310,26 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                         #{entry.entry_id}
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${entry.transaction_type === 'Revenue' ? 'bg-green-100 text-green-800' :
-                                            entry.transaction_type === 'Equity' ? 'bg-green-100 text-green-800' :
-                                                entry.transaction_type === 'Expense' ? 'bg-red-100 text-red-800' :
-                                                    entry.transaction_type === 'Asset' ? 'bg-blue-100 text-blue-800' :
-                                                        entry.transaction_type === 'Liability' ? 'bg-orange-100 text-orange-800' :
-                                                            'bg-purple-100 text-purple-800'
-                                            }`}>
-                                            {entry.transaction_type}
-                                        </span>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {`${capitalizeWords(getAccountDetails(entry.account_id).name)}` || `Account ${entry.account_id}`}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                        {getAccountDetails(entry.account_id).type ? (
+                                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getAccountTypeColor(getAccountDetails(entry.account_id).type)}`}>
+                                                {`${getAccountDetails(entry.account_id).type}`}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400">--</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {new Date(entry.txn_date).toLocaleDateString('en-IN')}
                                     </td>
-                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium ${entry.debit ? 'text-red-600' : 'text-gray-400'
+                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium  ${getAmountColor(getAccountDetails(entry.account_id).type, 'debit', entry.debit)
                                         }`}>
                                         {formatCurrency(entry.debit)}
                                     </td>
-                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium ${entry.credit ? 'text-green-600' : 'text-gray-400'
+                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium ${getAmountColor(getAccountDetails(entry.account_id).type, 'credit', entry.credit)
                                         }`}>
                                         {formatCurrency(entry.credit)}
                                     </td>
@@ -300,12 +346,12 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                                         {entry.narration || '-'}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {entry.created_by_name || entry.created_by || '-'}
+                                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                                            {entry.txn_group_id.slice(0, 8)}...
+                                        </span>
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button className="text-blue-600 hover:text-blue-800">
-                                            <Edit size={16} />
-                                        </button>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {entry.created_by_name || entry.created_by || '-'}
                                     </td>
                                 </tr>
                             ))
@@ -313,6 +359,8 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                     </tbody>
                 </table>
             </div>
+
+
 
             {/* Summary Footer */}
             {ledgerEntries.length > 0 && (

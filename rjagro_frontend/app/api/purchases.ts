@@ -1,4 +1,4 @@
-import { LedgerAccountType, Purchase } from '../types/interfaces';
+import { Purchase, PurchasePayload } from '../types/interfaces';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 
@@ -18,7 +18,9 @@ export const handleAddPurchase = async (
         !payload.total_cost ||
         !payload.purchase_date ||
         !payload.supplier ||
-        !payload.created_by
+        !payload.created_by ||
+        !payload.inventory_account_id ||
+        !payload.payment_account_id
     ) {
         toast.error('Please fill in all required fields');
         return;
@@ -29,10 +31,8 @@ export const handleAddPurchase = async (
 
     try {
         await api.post('/insert/purchases', payload);
-
         // Invalidate cache -> refetch purchases
         queryClient.invalidateQueries(['purchases']);
-
         toast.success('Purchase added successfully!');
     } catch (error) {
         console.error('Error adding purchase:', error);
@@ -41,16 +41,4 @@ export const handleAddPurchase = async (
         setLoading(false);
     }
 };
-
-
-export interface PurchasePayload {
-    item_code: string;
-    cost_per_unit: number;
-    total_cost: number;
-    purchase_date: string;
-    supplier: string;
-    quantity: number;
-    created_by: number;
-    payment_account: LedgerAccountType;
-}
 

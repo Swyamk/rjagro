@@ -3,3 +3,9 @@ export function calculateTotalCost(costPerUnit: string | number, quantity: strin
     const qty = Number(quantity) || 0;
     return cost * qty;
 }
+
+export function capitalizeWords(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/\b\w/g, char => char.toUpperCase());
+}

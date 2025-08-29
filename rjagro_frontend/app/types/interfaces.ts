@@ -25,6 +25,8 @@ export interface NewPurchase {
   supplier: string;
   payment_method?: string;
   payment_account?: LedgerAccountType;
+  inventory_account_id?: number;
+  payment_account_id?: number;
 }
 
 export interface Farmer {
@@ -248,20 +250,23 @@ export enum LedgerAccountType {
 
 export interface LedgerEntry {
   entry_id: number;
-  transaction_type: LedgerAccountType;
+  account_id: number;
+  account_name?: string;
+  account_type?: string;
   debit?: number;
   credit?: number;
   txn_date: string;
   reference_table?: string;
   reference_id?: number;
   narration?: string;
+  txn_group_id: string;
   created_at: string;
   created_by?: number;
   created_by_name?: string;
 }
 
 export interface LedgerEntryPayload {
-  transaction_type: LedgerAccountType;
+  account_id: number;
   debit?: number;
   credit?: number;
   txn_date: string;
@@ -272,7 +277,7 @@ export interface LedgerEntryPayload {
 }
 
 export interface NewLedgerEntry {
-  transaction_type: LedgerAccountType | '';
+  account_id: number | '';
   debit: number | '';
   credit: number | '';
   txn_date: string;
@@ -292,26 +297,26 @@ export interface StockReceiptPayload {
 
 
 export interface StockReceipt {
-    lot_id: number;
-    purchase_id?: number;
-    item_code: string;
-    item_name?: string;
-    received_qty: number;
-    remaining_qty: number;
-    unit_cost: number;
-    received_date: string;
-    supplier?: string;
+  lot_id: number;
+  purchase_id?: number;
+  item_code: string;
+  item_name?: string;
+  received_qty: number;
+  remaining_qty: number;
+  unit_cost: number;
+  received_date: string;
+  supplier?: string;
 }
 
 export interface NewStockReceipt {
-    purchase_id: number | '';
-    item_code: string;
-    item_name: string;
-    received_qty: number | '';
-    remaining_qty: number | '';
-    unit_cost: number | '';
-    received_date: string;
-    supplier: string;
+  purchase_id: number | '';
+  item_code: string;
+  item_name: string;
+  received_qty: number | '';
+  remaining_qty: number | '';
+  unit_cost: number | '';
+  received_date: string;
+  supplier: string;
 }
 
 export interface BatchAllocationLine {
@@ -343,3 +348,37 @@ export interface NewBatchAllocationLine {
   qty: number | '';
   unit_cost: number | '';
 }
+
+export interface LedgerAccount {
+  account_id: number;
+  name: string;
+  account_type: string;
+  current_balance: number;
+  created_at: string;
+}
+
+export interface NewLedgerAccount {
+  name: string;
+  account_type: string;
+  current_balance: number | '';
+}
+
+export interface LedgerAccountPayload {
+  name: string;
+  account_type: string;
+  current_balance: number;
+}
+
+export interface PurchasePayload {
+  item_code: string;
+  cost_per_unit: number;
+  total_cost: number;
+  purchase_date: string;
+  supplier: string;
+  quantity: number;
+  created_by: number;
+  payment_account: LedgerAccountType;
+  inventory_account_id?: number;
+  payment_account_id?: number;
+}
+
