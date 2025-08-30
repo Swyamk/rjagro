@@ -18,6 +18,7 @@ pub struct PurchaseWithItem {
     pub item_name: String,
     pub cost_per_unit: Decimal,
     pub total_cost: Option<Decimal>,
+    pub quantity: Decimal,
     pub purchase_date: NaiveDate,
     pub supplier: Option<String>,
     pub created_by: Option<i32>,

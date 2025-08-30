@@ -72,6 +72,7 @@ pub async fn get_purchases_handler(State(db): State<DatabaseConnection>) -> impl
                     item_name: item_opt.map(|i| i.item_name).unwrap_or_default(),
                     cost_per_unit: p.cost_per_unit,
                     total_cost: p.total_cost,
+                    quantity: p.quantity,
                     purchase_date: p.purchase_date,
                     supplier: p.supplier,
                     created_by: p.created_by,

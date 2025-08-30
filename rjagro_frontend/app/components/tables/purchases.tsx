@@ -245,6 +245,9 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                                 Total Cost
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Quantity
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Purchase Date
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -291,6 +294,9 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {purchase.total_cost}
+                                    </td>
+                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {purchase.quantity}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {purchase.purchase_date}

@@ -11,6 +11,7 @@ export interface Purchase {
   item_name: string;
   cost_per_unit: number;
   total_cost: number;
+  quantity: number;
   purchase_date: string;
   supplier: string;
   created_by: number;
