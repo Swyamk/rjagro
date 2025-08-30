@@ -16,7 +16,6 @@ pub struct Model {
     pub bank_account_no: String,
     pub bank_name: String,
     pub ifsc_code: String,
-    pub area: String,
     pub created_at: DateTimeWithTimeZone,
 }
 

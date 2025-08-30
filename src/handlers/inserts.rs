@@ -140,7 +140,6 @@ pub async fn create_trader(
         bank_account_no: Set(payload.bank_account_no),
         bank_name: Set(payload.bank_name),
         ifsc_code: Set(payload.ifsc_code),
-        area: Set(payload.area),
         ..Default::default()
     };
     new_trader

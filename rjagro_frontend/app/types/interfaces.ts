@@ -87,7 +87,6 @@ export interface Trader {
   bank_account_no: string;
   bank_name: string;
   ifsc_code: string;
-  area: string;
   created_at: string;
 }
 
@@ -98,7 +97,6 @@ export interface NewTrader {
   bank_account_no: string;
   bank_name: string;
   ifsc_code: string;
-  area: string;
 }
 
 export interface ProductionLine {

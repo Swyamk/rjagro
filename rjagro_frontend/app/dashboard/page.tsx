@@ -143,7 +143,6 @@ const Dashboard = () => {
         bank_account_no: '',
         bank_name: '',
         ifsc_code: '',
-        area: ''
     });
 
     // Production Lines state

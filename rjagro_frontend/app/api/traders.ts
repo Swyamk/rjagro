@@ -18,9 +18,7 @@ export const handleAddTrader = async (
     !payload.address ||
     !payload.bank_account_no ||
     !payload.bank_name ||
-    !payload.ifsc_code ||
-    !payload.area
-  ) {
+    !payload.ifsc_code ) {
     toast.error('Please fill in all required fields');
     return;
   }
@@ -51,5 +49,4 @@ export interface TraderPayload {
   bank_account_no: string;
   bank_name: string;
   ifsc_code: string;
-  area: string;
 }

@@ -324,7 +324,6 @@ impl MigrationTrait for Migration {
                     .col(string_len(Traders::BankAccountNo, 30).not_null())
                     .col(string_len(Traders::BankName, 100).not_null())
                     .col(string_len(Traders::IfscCode, 15).not_null())
-                    .col(string_len(Traders::Area, 100))
                     .col(
                         timestamp_with_time_zone(Traders::CreatedAt)
                             .default(Expr::current_timestamp()),
@@ -642,7 +641,6 @@ enum Traders {
     BankAccountNo,
     BankName,
     IfscCode,
-    Area,
     CreatedAt,
 }
 

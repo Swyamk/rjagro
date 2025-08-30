@@ -119,17 +119,6 @@ const TradersTable: React.FC<TradersTableProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Area *</label>
-            <input
-              type="text"
-              value={newTrader.area}
-              onChange={(e) => setNewTrader(prev => ({ ...prev, area: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Area"
-            />
-          </div>
-
           <div className="flex items-end">
             <button
               onClick={handleAddTrader}
@@ -178,7 +167,6 @@ const TradersTable: React.FC<TradersTableProps> = ({
                 <td className="px-4 py-4 text-sm text-gray-900">{trader.bank_account_no}</td>
                 <td className="px-4 py-4 text-sm text-gray-900">{trader.bank_name}</td>
                 <td className="px-4 py-4 text-sm text-gray-900">{trader.ifsc_code}</td>
-                <td className="px-4 py-4 text-sm text-gray-900">{trader.area}</td>
                 <td className="px-4 py-4 text-sm text-gray-900">{trader.created_at}</td>
                 <td className="px-4 py-4 text-sm text-gray-500">
                   <button className="text-blue-600 hover:text-blue-800">

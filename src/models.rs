@@ -96,7 +96,6 @@ pub struct CreateTrader {
     pub bank_account_no: String,
     pub bank_name: String,
     pub ifsc_code: String,
-    pub area: String,
 }
 
 #[derive(Deserialize)]
