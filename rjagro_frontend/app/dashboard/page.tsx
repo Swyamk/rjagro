@@ -365,7 +365,7 @@ const Dashboard = () => {
     // Ledger Accounts state
     const { data: ledgerAccounts = [],
         //  isLoading: loadingLedgerAccounts
-         } = useQuery({
+    } = useQuery({
         queryKey: ['ledger_accounts'],
         queryFn: fetchLedgerAccounts,
         staleTime: 5 * 60 * 1000,
@@ -550,8 +550,7 @@ const Dashboard = () => {
                         newBatch={newBatch}
                         setShowAddForm={setShowAddForm}
                         setNewBatch={setNewBatch}
-                        handleAddBatch={() => handleAddBatch(newBatch, queryClient, setLoading)}
-                    />
+                        handleAddBatch={() => handleAddBatch(newBatch, queryClient, setLoading)} batchAllocations={allocations} requirements={requirements} />
                 )}
 
                 {activeTab === 'Batch Requirements' && (
