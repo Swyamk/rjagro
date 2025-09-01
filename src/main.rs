@@ -3,10 +3,11 @@ use std::sync::Arc;
 use axum::http::{self, HeaderValue};
 use axum::routing::post;
 use axum::{routing::get, Router};
-use migration::{Migrator, MigratorTrait};
+// use migration::{Migrator, MigratorTrait};
 use reqwest::Method;
 use sea_orm::{Database, DatabaseConnection};
 use shuttle_runtime::SecretStore;
+use tracing::{error, info};
 mod auth;
 mod handlers;
 mod models;
@@ -24,20 +25,29 @@ async fn hello_world() -> &'static str {
 
 #[shuttle_runtime::main]
 async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_axum::ShuttleAxum {
+    info!("Starting application...");
+
     let database_url = secret_store
         .get("DATABASE_URL")
         .expect("DATABASE_URL must be set in Secrets.toml");
 
-    // 2. Connect to DB
-    let db: DatabaseConnection = Database::connect(&database_url)
-        .await
-        .expect("Failed to connect to database");
+    // Connect to DB
+    let db: DatabaseConnection = match Database::connect(&database_url).await {
+        Ok(conn) => {
+            info!("✅ Successfully connected to database");
+            conn
+        }
+        Err(e) => {
+            error!("❌ Failed to connect to database: {:?}", e);
+            panic!("Database connection failed: {:?}", e);
+        }
+    };
 
     // 3. Run migrations
     // Migrator::up(&db, None)
     //     .await
     //     .expect("Migration failed");
-    Migrator::fresh(&db).await.expect("failllled");
+    // Migrator::fresh(&db).await.expect("failllled");
 
     // 4. Build router
     let shared_secrets = Arc::new(secret_store);
@@ -66,6 +76,8 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
         .route("/login", post(login_handler))
         .with_state(db)
         .layer(cors);
+
+    info!("🚀 Server is ready and routes are mounted");
 
     Ok(router.into())
 }
