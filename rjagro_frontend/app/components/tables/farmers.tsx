@@ -294,7 +294,7 @@ const FarmersTable: React.FC<FarmersTableProps> = ({
                                             <IndianRupee size={24} className="text-gray-400" />
                                         </div>
                                         <p className="text-lg font-medium">No commission history found</p>
-                                        <p className="text-sm text-gray-400">This farmer hasn't received any commissions yet.</p>
+                                        <p className="text-sm text-gray-400">This farmer hasn&apost received any commissions yet.</p>
                                     </div>
                                 ) : (
                                     <div className="max-h-80 overflow-auto">

@@ -1,7 +1,7 @@
 'use client'
 import React, { useMemo, useState } from 'react';
 import { Plus, X, Save, IndianRupee } from 'lucide-react';
-import { Batch, BatchAllocation, BatchPayload, BatchRequirement, CreateFarmerCommission, Farmer, FarmerCommissionHistory, Item, SupervisorSimplified } from '@/app/types/interfaces';
+import { Batch, BatchAllocation, BatchPayload, BatchRequirement, CreateFarmerCommission, Farmer, FarmerCommissionHistory, SupervisorSimplified } from '@/app/types/interfaces';
 import { useAuth } from '@/app/hooks/useAuth';
 
 interface BatchesTableProps {
