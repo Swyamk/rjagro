@@ -21,7 +21,6 @@ const LedgerAccountsTable: React.FC<LedgerAccountsTableProps> = ({
   setNewLedgerAccount,
   handleAddLedgerAccount,
 }) => {
-  console.log('Rendering LedgerAccountsTable with accounts:', ledgerAccounts);
   const accountTypes = [
     { value: 'Asset', label: 'Asset' },
     { value: 'Liability', label: 'Liability' },
