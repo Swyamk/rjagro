@@ -381,3 +381,18 @@ export interface PurchasePayload {
   payment_account_id?: number;
 }
 
+
+export interface FarmerCommissionHistory {
+    id: number;
+    farmer_id: number;
+    commission_amount: number;
+    description?: string;
+    created_at: string;
+}
+
+export interface CreateFarmerCommission {
+    farmer_id: number;
+    commission_amount: number | '';
+    description: string;
+    created_by?: number;
+}

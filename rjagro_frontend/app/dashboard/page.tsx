@@ -14,7 +14,7 @@ import TradersTable from '../components/tables/traders';
 import { fetchProductionLines, handleAddProductionLine } from '../api/production_line';
 import ProductionLinesTable from '../components/tables/production_lines';
 import { fetchSupervisors } from '../api/supervisors';
-import { fetchBatches, handleAddBatch } from '../api/batches';
+import { fetchBatches, fetchFarmerCommissionHistory, handleAddBatch, handleAddFarmerCommission } from '../api/batches';
 import BatchesTable from '../components/tables/batches';
 import { fetchBatchRequirements, handleAddBatchRequirement } from '../api/batch_requirements';
 import BatchRequirementsTable from '../components/tables/batch_requirements';
@@ -25,7 +25,7 @@ import { fetchInventory, handleAddInventory, handleUpdateInventory } from '../ap
 import InventoryTable from '../components/tables/inventory';
 import { fetchInventoryMovements, handleAddInventoryMovement } from '../api/inventory_movement';
 import InventoryMovementsTable from '../components/tables/inventory_movement';
-import { BatchAllocationLinePayload, BatchPayload, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerAccount, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, PurchasePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
+import { BatchAllocationLinePayload, BatchPayload, CreateFarmerCommission, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerAccount, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, PurchasePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
 import { fetchLedgerEntries, handleAddLedgerEntry } from '../api/ledger_entries';
 import LedgerEntriesTable from '../components/tables/ledger_entries';
 import { fetchStockReceipts, handleAddStockReceipt } from '../api/stock_receipts';
@@ -376,12 +376,42 @@ const Dashboard = () => {
         account_type: '',
         current_balance: ''
     });
+    const { data: commissionHistory = [] } = useQuery({
+        queryKey: ['farmer-commission-history'],
+        queryFn: fetchFarmerCommissionHistory,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const [commissionLoading, setCommissionLoading] = useState(false);
 
 
     const tabs = [
         'Users', 'Ledger Accounts', 'Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Stock Receipts', 'Batch Allocation Lines', 'Batches', 'Batch Requirements',
         'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
     ];
+
+    const onAddFarmerCommission = async (commission: CreateFarmerCommission) => {
+        const payload: CreateFarmerCommission = {
+            farmer_id: commission.farmer_id,
+            commission_amount: typeof commission.commission_amount === 'string'
+                ? parseFloat(commission.commission_amount)
+                : commission.commission_amount,
+            description: commission.description,
+            created_by: commission.created_by
+        };
+
+        return handleAddFarmerCommission(
+            payload,
+            queryClient,
+            setCommissionLoading,
+            () => {
+                // Success callback - commission form will be reset in the component
+            },
+            (error) => {
+                console.error('Failed to add commission:', error);
+            }
+        );
+    };
 
 
 
@@ -550,7 +580,13 @@ const Dashboard = () => {
                         newBatch={newBatch}
                         setShowAddForm={setShowAddForm}
                         setNewBatch={setNewBatch}
-                        handleAddBatch={() => handleAddBatch(newBatch, queryClient, setLoading)} batchAllocations={allocations} requirements={requirements} />
+                        handleAddBatch={() => handleAddBatch(newBatch, queryClient, setLoading)}
+                        batchAllocations={allocations}
+                        requirements={requirements}
+                        commissionHistory={commissionHistory}
+                        onAddCommission={onAddFarmerCommission}
+                        commissionLoading={commissionLoading}
+                    />
                 )}
 
                 {activeTab === 'Batch Requirements' && (

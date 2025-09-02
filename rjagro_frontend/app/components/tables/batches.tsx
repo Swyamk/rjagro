@@ -1,7 +1,8 @@
 'use client'
 import React, { useMemo, useState } from 'react';
-import { Plus, X, Save } from 'lucide-react';
-import { Batch, BatchAllocation, BatchPayload, BatchRequirement, Farmer, Item, SupervisorSimplified } from '@/app/types/interfaces';
+import { Plus, X, Save, IndianRupee } from 'lucide-react';
+import { Batch, BatchAllocation, BatchPayload, BatchRequirement, CreateFarmerCommission, Farmer, FarmerCommissionHistory, Item, SupervisorSimplified } from '@/app/types/interfaces';
+import { useAuth } from '@/app/hooks/useAuth';
 
 interface BatchesTableProps {
     batches: Batch[];
@@ -14,6 +15,9 @@ interface BatchesTableProps {
     newBatch: BatchPayload;
     setShowAddForm: (show: boolean) => void;
     setNewBatch: React.Dispatch<React.SetStateAction<BatchPayload>>;
+    commissionHistory?: FarmerCommissionHistory[];
+    onAddCommission?: (commission: CreateFarmerCommission) => Promise<void>;
+    commissionLoading?: boolean;
     handleAddBatch: () => void;
 }
 
@@ -42,19 +46,70 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
     handleAddBatch,
     batchAllocations,
     requirements,
+    commissionHistory = [],
+    onAddCommission,
+    commissionLoading = false,
 }) => {
+    const user = useAuth().user;
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
-    const [activeTab, setActiveTab] = useState<'Feed' | 'Chicks' | 'Medicine' | 'Summary'>('Feed');
+    const [activeTab, setActiveTab] = useState<'Feed' | 'Chicks' | 'Medicine' | 'FarmerCommission' | 'Summary'>('Feed');
+
+    // Commission form state
+    const [showCommissionForm, setShowCommissionForm] = useState(false);
+    const [newCommission, setNewCommission] = useState<CreateFarmerCommission>({
+        farmer_id: 0,
+        commission_amount: '',
+        description: '',
+        created_by: user?.user_id
+    });
 
     const openBatchModal = (batch: Batch) => {
         setSelectedBatch(batch);
         setActiveTab('Feed');
         setModalOpen(true);
+        // Reset commission form
+        setShowCommissionForm(false);
+        setNewCommission({
+            farmer_id: batch.farmer_id,
+            commission_amount: '',
+            description: '',
+            created_by: user?.user_id
+        });
     };
+
     const closeModal = () => {
         setModalOpen(false);
         setSelectedBatch(null);
+        setShowCommissionForm(false);
+    };
+
+    const handleAddCommission = async () => {
+        if (!selectedBatch || !onAddCommission) return;
+
+        if (!newCommission.commission_amount || parseNumberSafe(newCommission.commission_amount) <= 0) {
+            alert('Please enter a valid commission amount');
+            return;
+        }
+
+        try {
+            await onAddCommission({
+                ...newCommission,
+                farmer_id: selectedBatch.farmer_id,
+                commission_amount: parseNumberSafe(newCommission.commission_amount),
+                created_by: user?.user_id
+            });
+
+            // Reset form and hide it
+            setNewCommission({
+                farmer_id: selectedBatch.farmer_id,
+                commission_amount: '',
+                description: ''
+            });
+            setShowCommissionForm(false);
+        } catch (error) {
+            console.error('Error adding commission:', error);
+        }
     };
 
     // accepted requirements for selected batch
@@ -62,15 +117,14 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
         if (!selectedBatch) return [];
         return requirements.filter(r =>
             Number(r.batch_id) === Number(selectedBatch.batch_id) &&
-            String(r.status || '').toLowerCase().includes('accept') // matches "accepted" or "Accepted"
+            String(r.status || '').toLowerCase().includes('accept')
         );
     }, [selectedBatch, requirements]);
 
-    // For each accepted requirement, compute allocated_value from batchAllocations (sum of allocations for that requirement)
+    // For each accepted requirement, compute allocated_value from batchAllocations
     const acceptedRequirementsWithAllocation = useMemo(() => {
         if (!acceptedRequirements.length) return [];
         return acceptedRequirements.map(req => {
-            // find allocations for this requirement_id
             const allocs = batchAllocations.filter(a => Number(a.requirement_id) === Number(req.requirement_id));
             const totalAllocatedValue = allocs.reduce((sum, a) => sum + parseNumberSafe(a.allocated_value), 0);
             const category = classifyName(req.item_name || '');
@@ -95,6 +149,22 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
             Medicine: { rows: medicine, total: sum(medicine) }
         };
     }, [acceptedRequirementsWithAllocation]);
+
+    // Commission calculations
+    const farmerCommissionData = useMemo(() => {
+        if (!selectedBatch) return { history: [], total: 0 };
+
+        const farmerCommissions = commissionHistory.filter(c =>
+            Number(c.farmer_id) === Number(selectedBatch.farmer_id)
+        );
+
+        const totalCommission = farmerCommissions.reduce((sum, c) => sum + parseNumberSafe(c.commission_amount), 0);
+
+        return {
+            history: farmerCommissions,
+            total: totalCommission
+        };
+    }, [selectedBatch, commissionHistory]);
 
     return (
         <div className="bg-white rounded-lg shadow">
@@ -167,7 +237,7 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                 onChange={(e) => setNewBatch(prev => ({
                                     ...prev,
                                     start_date: e.target.value,
-                                    end_date: e.target.value // keep same as start_date 
+                                    end_date: e.target.value
                                 }))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                             />
@@ -276,7 +346,7 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                 </table>
             </div>
 
-            {/* modal */}
+            {/* Modal */}
             {modalOpen && selectedBatch && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
                     {/* Enhanced backdrop with blur effect */}
@@ -319,7 +389,7 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                         {/* Enhanced tabs with better styling */}
                         <div className="bg-gray-50 border-b border-gray-200">
                             <div className="flex">
-                                {(['Feed', 'Chicks', 'Medicine', 'Summary'] as const).map((tab) => (
+                                {(['Feed', 'Chicks', 'Medicine', 'FarmerCommission', 'Summary'] as const).map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -328,7 +398,7 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                             : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
                                             }`}
                                     >
-                                        {tab}
+                                        {tab === 'FarmerCommission' ? 'Farmer Commission' : tab}
                                         {activeTab === tab && (
                                             <div className="absolute inset-x-0 bottom-0 h-0.5 bg-green-600 rounded-full" />
                                         )}
@@ -336,17 +406,152 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                 ))}
                             </div>
                         </div>
+
                         <div className="p-6">
-                            {activeTab === 'Summary' ? (
-                                /* Summary Tab Content */
+                            {activeTab === 'FarmerCommission' ? (
+                                /* Farmer Commission Tab Content */
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="text-lg font-semibold text-gray-800">Farmer Commission</h4>
+                                            <p className="text-sm text-gray-600">Manage commission payments for {selectedBatch.farmer_name}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowCommissionForm(!showCommissionForm)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                        >
+                                            <IndianRupee size={18} />
+                                            {showCommissionForm ? 'Cancel' : 'Add Commission'}
+                                        </button>
+                                    </div>
+
+                                    {/* Total Commission Display */}
+                                    <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-green-800">
+                                                Total Commission Paid
+                                            </span>
+                                            <span className="text-2xl font-bold text-green-900">
+                                                ₹{farmerCommissionData.total.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Add Commission Form */}
+                                    {showCommissionForm && (
+                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                            <h5 className="text-md font-medium text-gray-800 mb-4">Add New Commission Payment</h5>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Commission Amount *
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={newCommission.commission_amount}
+                                                        onChange={(e) => setNewCommission(prev => ({
+                                                            ...prev,
+                                                            commission_amount: e.target.value === '' ? '' : Number(e.target.value)
+                                                        }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black"
+                                                        placeholder="Enter amount"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Description
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={newCommission.description}
+                                                        onChange={(e) => setNewCommission(prev => ({
+                                                            ...prev,
+                                                            description: e.target.value
+                                                        }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black"
+                                                        placeholder="Payment description"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3 mt-4">
+                                                <button
+                                                    onClick={handleAddCommission}
+                                                    disabled={commissionLoading}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                                >
+                                                    <Save size={16} />
+                                                    {commissionLoading ? 'Saving...' : 'Save Commission'}
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowCommissionForm(false)}
+                                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Commission History Table */}
+                                    <div>
+                                        <h5 className="text-md font-medium text-gray-800 mb-3">Commission History</h5>
+                                        <div className="max-h-80 overflow-auto rounded-xl border border-gray-200">
+                                            {farmerCommissionData.history.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                                                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                                        <IndianRupee className="text-xl text-gray-400" />
+                                                    </div>
+                                                    <p className="text-sm font-medium">No commission payments</p>
+                                                    <p className="text-xs text-gray-400">No commission history available</p>
+                                                </div>
+                                            ) : (
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-gray-50 sticky top-0">
+                                                        <tr className="text-left">
+                                                            <th className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                                                Date
+                                                            </th>
+                                                            <th className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                                                Amount
+                                                            </th>
+                                                            <th className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                                                Description
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="bg-white divide-y divide-gray-200">
+                                                        {farmerCommissionData.history
+                                                            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                                            .map((commission) => (
+                                                                <tr key={commission.id} className="hover:bg-gray-50 transition-colors duration-150">
+                                                                    <td className="px-4 py-4 text-gray-900">
+                                                                        {new Date(commission.created_at).toLocaleDateString()}
+                                                                    </td>
+                                                                    <td className="px-4 py-4 text-green-600 font-semibold">
+                                                                        ₹{parseNumberSafe(commission.commission_amount).toFixed(2)}
+                                                                    </td>
+                                                                    <td className="px-4 py-4 text-gray-700">
+                                                                        {commission.description || 'No description'}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : activeTab === 'Summary' ? (
+                                /* Summary Tab Content with Commission */
                                 <div className="space-y-6">
                                     <div className="text-center mb-6">
                                         <h4 className="text-lg font-semibold text-gray-800 mb-2">Allocation Summary</h4>
                                         <p className="text-sm text-gray-600">Overview of all allocated values for this batch</p>
                                     </div>
 
-                                    {/* Individual category totals */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    {/* Individual category totals including farmer commission */}
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                                         {(['Feed', 'Chicks', 'Medicine'] as const).map((category) => (
                                             <div key={category} className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
                                                 <div className="text-center">
@@ -362,17 +567,33 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                                 </div>
                                             </div>
                                         ))}
+
+                                        {/* Farmer Commission Card */}
+                                        <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                                            <div className="text-center">
+                                                <div className="text-xs font-medium text-green-600 uppercase tracking-wider mb-1">
+                                                    Farmer Commission
+                                                </div>
+                                                <div className="text-xl font-bold text-green-900">
+                                                    ₹{farmerCommissionData.total.toFixed(2)}
+                                                </div>
+                                                <div className="text-xs text-green-600 mt-1">
+                                                    {farmerCommissionData.history.length} payments
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Grand total */}
+                                    {/* Grand total including farmer commission */}
                                     <div className="p-6 bg-gradient-to-r from-green-100 to-blue-100 rounded-xl border-2 border-green-200">
                                         <div className="text-center">
-                                            <div className="text-sm font-medium text-gray-700 mb-2">GRAND TOTAL</div>
+                                            <div className="text-sm font-medium text-gray-700 mb-2">GRAND TOTAL (Including Commission)</div>
                                             <div className="text-3xl font-bold text-green-900">
-                                                ₹{(byCategory.Feed.total + byCategory.Chicks.total + byCategory.Medicine.total).toFixed(2)}
+                                                ₹{(byCategory.Feed.total + byCategory.Chicks.total + byCategory.Medicine.total + farmerCommissionData.total).toFixed(2)}
                                             </div>
                                             <div className="text-sm text-gray-600 mt-2">
-                                                Total items: {byCategory.Feed.rows.length + byCategory.Chicks.rows.length + byCategory.Medicine.rows.length}
+                                                Total allocations: {byCategory.Feed.rows.length + byCategory.Chicks.rows.length + byCategory.Medicine.rows.length} |
+                                                Commission payments: {farmerCommissionData.history.length}
                                             </div>
                                         </div>
                                     </div>
@@ -458,14 +679,12 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                 </>
                             )}
                         </div>
-
-
                     </div>
                 </div>
-            )
-            }
-        </div >
-    )
+            )}
+        </div>
+    );
 };
 
 export default BatchesTable;
+

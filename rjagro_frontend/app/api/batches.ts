@@ -1,4 +1,4 @@
-import { Batch, BatchPayload } from '../types/interfaces';
+import { Batch, BatchPayload, CreateFarmerCommission, FarmerCommissionHistory } from '../types/interfaces';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 
@@ -38,6 +38,51 @@ export const handleAddBatch = async (
     } catch (error) {
         console.error("Error adding batch:", error);
         toast.error("Error adding batch");
+        if (onError) onError(error);
+    } finally {
+        setLoading(false);
+    }
+};
+
+export const fetchFarmerCommissionHistory = async (): Promise<FarmerCommissionHistory[]> => {
+    const response = await api.get("/getall/farmer_commission");
+    return response.data;
+};
+
+
+export const fetchFarmerCommissionHistoryById = async (farmerId: number): Promise<FarmerCommissionHistory[]> => {
+    const response = await api.get(`/getbyid/farmer_commission/${farmerId}`);
+    return response.data;
+};
+
+
+export const handleAddFarmerCommission = async (
+    payload: CreateFarmerCommission,
+    queryClient: any,
+    setLoading: (loading: boolean) => void,
+    onSuccess?: () => void,
+    onError?: (error: any) => void
+) => {
+    console.log("Payload in handleAddFarmerCommission:", payload);
+    if (!payload.farmer_id || !payload.commission_amount || !payload.created_by || Number(payload.commission_amount) <= 0) {
+        toast.error("Please fill in all required fields with valid values");
+        return;
+    }
+
+    setLoading(true);
+    toast.info("Adding farmer commission...");
+
+    try {
+        await api.post("/insert/farmer_commission", payload);
+
+        // Refresh cache
+        queryClient.invalidateQueries(["farmer-commission-history"]);
+
+        toast.success("Farmer commission added successfully!");
+        if (onSuccess) onSuccess();
+    } catch (error) {
+        console.error("Error adding farmer commission:", error);
+        toast.error("Error adding farmer commission");
         if (onError) onError(error);
     } finally {
         setLoading(false);
