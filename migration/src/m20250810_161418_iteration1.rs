@@ -618,7 +618,7 @@ pub enum BatchAllocations {
 }
 
 #[derive(DeriveIden)]
-enum Farmers {
+pub enum Farmers {
     Table,
     FarmerId,
     Name,

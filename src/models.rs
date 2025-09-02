@@ -191,3 +191,11 @@ pub struct CreateLedgerAccount {
     pub account_type: LedgerAccountType,
     pub current_balance: Decimal,
 }
+
+#[derive(Deserialize)]
+pub struct CreateFarmerCommission {
+    pub farmer_id: i32,
+    pub commission_amount: Decimal,
+    pub description: Option<String>,
+    pub created_by: Option<i32>,
+}

@@ -3,6 +3,7 @@ use axum::{routing::post, Router};
 use entity::sea_orm_active_enums::UserRole;
 use sea_orm::DatabaseConnection;
 
+use crate::handlers::inserts::create_farmer_commission;
 use crate::{
     auth::middleware::{require_roles_middleware, RequireRoles},
     handlers::{
@@ -33,4 +34,5 @@ pub fn insert_routes() -> Router<DatabaseConnection> {
         .route("/suppliers", post(create_supplier))
         .route("/bird_count_history", post(create_bird_count_history))
         .route("/bird_sell_history", post(create_bird_sell_history))
+        .route("/farmer_commission", post(create_farmer_commission))
 }

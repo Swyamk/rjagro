@@ -8,6 +8,7 @@ pub mod batch_requirements;
 pub mod batches;
 pub mod bird_count_history;
 pub mod bird_sell_history;
+pub mod farmer_commission_history;
 pub mod farmers;
 pub mod inventory;
 pub mod inventory_movements;

@@ -7,6 +7,7 @@ use crate::models::{
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use entity::{sea_orm_active_enums::UserRole, *};
 use sea_orm::ColumnTrait;
+use sea_orm::QueryOrder;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 // USERS
@@ -428,6 +429,22 @@ pub async fn get_ledger_accounts_handler(
         Ok(data) => Ok(Json(data)),
         Err(e) => {
             eprintln!("Failed to fetch ledger accounts: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn get_all_farmer_commission_history_handler(
+    State(db): State<DatabaseConnection>,
+) -> Result<Json<Vec<farmer_commission_history::Model>>, StatusCode> {
+    match farmer_commission_history::Entity::find()
+        .order_by_desc(farmer_commission_history::Column::CreatedAt)
+        .all(&db)
+        .await
+    {
+        Ok(data) => Ok(Json(data)),
+        Err(e) => {
+            eprintln!("Failed to fetch farmer commission history: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

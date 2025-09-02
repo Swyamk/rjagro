@@ -1,7 +1,12 @@
 use crate::models::*;
 use axum::{extract::State, http::StatusCode, Json};
+use chrono::Utc;
 use entity::{sea_orm_active_enums::RequirementStatus, *};
+use sea_orm::EntityTrait;
+use sea_orm::TransactionTrait;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
+use tracing::error;
+use uuid::Uuid;
 
 /// Production Lines
 pub async fn create_production_line(
@@ -228,4 +233,125 @@ pub async fn create_ledger_account(
         eprintln!("Failed to insert ledger account: {:?}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })
+}
+
+pub async fn create_farmer_commission(
+    State(db): State<DatabaseConnection>,
+    Json(payload): Json<CreateFarmerCommission>,
+) -> Result<Json<farmer_commission_history::Model>, StatusCode> {
+    const CASH_ACCOUNT_ID: i32 = 101;
+    const COMMISSION_EXPENSE_ACCOUNT_ID: i32 = 106;
+
+    let txn = db.begin().await.map_err(|e| {
+        error!("Failed to start transaction: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // 1) insert farmer commission history
+    let new_commission = farmer_commission_history::ActiveModel {
+        farmer_id: Set(payload.farmer_id),
+        commission_amount: Set(payload.commission_amount),
+        description: Set(payload.description),
+        created_at: Set(Utc::now().into()),
+        ..Default::default()
+    };
+
+    let saved_commission = new_commission.insert(&txn).await.map_err(|e| {
+        error!("Failed to insert farmer commission history: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // 2) create ledger entries
+    let txn_group_id = Uuid::new_v4();
+    let today = chrono::Local::now().date_naive();
+
+    let debit_entry = ledger_entries::ActiveModel {
+        account_id: Set(COMMISSION_EXPENSE_ACCOUNT_ID),
+        debit: Set(Some(payload.commission_amount)),
+        credit: Set(None),
+        txn_date: Set(today),
+        reference_table: Set(Some("farmer_commission_history".to_string())),
+        reference_id: Set(Some(saved_commission.id)),
+        narration: Set(Some("Farmer commission debit".to_string())),
+        txn_group_id: Set(txn_group_id),
+        created_by: Set(payload.created_by),
+        ..Default::default()
+    };
+
+    let credit_entry = ledger_entries::ActiveModel {
+        account_id: Set(CASH_ACCOUNT_ID),
+        debit: Set(None),
+        credit: Set(Some(payload.commission_amount)),
+        txn_date: Set(today),
+        reference_table: Set(Some("farmer_commission_history".to_string())),
+        reference_id: Set(Some(saved_commission.id)),
+        narration: Set(Some("Cash paid for farmer commission".to_string())),
+        txn_group_id: Set(txn_group_id),
+        created_by: Set(payload.created_by),
+        ..Default::default()
+    };
+
+    debit_entry.insert(&txn).await.map_err(|e| {
+        error!("Failed to insert debit ledger entry: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    credit_entry.insert(&txn).await.map_err(|e| {
+        error!("Failed to insert credit ledger entry: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // 3) update balances
+    let mut commission_acct: ledger_accounts::ActiveModel =
+        ledger_accounts::Entity::find_by_id(COMMISSION_EXPENSE_ACCOUNT_ID)
+            .one(&txn)
+            .await
+            .map_err(|e| {
+                error!("Failed to fetch commission account: {:?}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+            .ok_or_else(|| {
+                error!(
+                    "Commission account not found: {}",
+                    COMMISSION_EXPENSE_ACCOUNT_ID
+                );
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+            .into();
+
+    commission_acct.current_balance =
+        Set(commission_acct.current_balance.unwrap() + payload.commission_amount);
+
+    commission_acct.update(&txn).await.map_err(|e| {
+        error!("Failed to update commission account balance: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let mut cash_acct: ledger_accounts::ActiveModel =
+        ledger_accounts::Entity::find_by_id(CASH_ACCOUNT_ID)
+            .one(&txn)
+            .await
+            .map_err(|e| {
+                error!("Failed to fetch cash account: {:?}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+            .ok_or_else(|| {
+                error!("Cash account not found: {}", CASH_ACCOUNT_ID);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+            .into();
+
+    cash_acct.current_balance = Set(cash_acct.current_balance.unwrap() - payload.commission_amount);
+
+    cash_acct.update(&txn).await.map_err(|e| {
+        error!("Failed to update cash account balance: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    txn.commit().await.map_err(|e| {
+        error!("Failed to commit transaction: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Json(saved_commission))
 }
