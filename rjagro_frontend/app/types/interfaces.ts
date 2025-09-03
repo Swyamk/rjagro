@@ -1,6 +1,7 @@
 export interface Item {
   item_code: string;
   item_name: string;
+  item_category: string;
   unit: string;
 }
 

@@ -88,6 +88,7 @@ const Dashboard = () => {
         item_code: '',
         item_name: '',
         unit: '',
+        item_category: ''
     });
     const [showAddItemForm, setShowAddItemForm] = useState(false);
 

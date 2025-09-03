@@ -1,3 +1,4 @@
+import { ItemCategory } from '@/app/types/enums';
 import { Item } from '@/app/types/interfaces';
 import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
 interface ItemsTableProps {
@@ -82,6 +83,28 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Category *
+                        </label>
+                        <select
+                            value={newItem.item_category}
+                            onChange={(e) =>
+                                setNewItem((prev) => ({
+                                    ...prev,
+                                    category: e.target.value as ItemCategory,
+                                }))
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                            <option value="">Select category</option>
+                            <option value="feed">Feed</option>
+                            <option value="medicine">Medicine</option>
+                            <option value="chicks">Chicks</option>
+                        </select>
+                    </div>
+
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                             Unit
                         </label>
                         <input
@@ -122,6 +145,9 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                             Unit
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Category
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
                         </th>
                     </tr>
@@ -147,6 +173,9 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {item.item_name}
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {item.item_category}
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {item.unit || '-'}
