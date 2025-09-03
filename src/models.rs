@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use entity::sea_orm_active_enums::{
-    BatchStatus, LedgerAccountType, RequirementStatus, SupplierType, UserRole,
+    BatchStatus, ItemCategory, LedgerAccountType, RequirementStatus, SupplierType, UserRole,
 };
 use sea_orm::prelude::{DateTimeWithTimeZone, Decimal};
 use sea_orm::FromQueryResult;
@@ -27,6 +27,7 @@ pub struct PurchaseWithItem {
 pub struct CreateItem {
     pub item_code: String,
     pub item_name: String,
+    pub item_category: ItemCategory,
     pub unit: Option<String>,
 }
 

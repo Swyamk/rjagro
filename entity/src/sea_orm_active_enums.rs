@@ -102,3 +102,14 @@ pub enum LedgerAccountType {
     #[sea_orm(string_value = "expense")]
     Expense,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "item_category")]
+pub enum ItemCategory {
+    #[sea_orm(string_value = "feed")]
+    Feed,
+    #[sea_orm(string_value = "medicine")]
+    Medicine,
+    #[sea_orm(string_value = "chicks")]
+    Chicks,
+}

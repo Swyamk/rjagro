@@ -32,8 +32,10 @@ pub async fn create_item(
     let new_item = items::ActiveModel {
         item_code: Set(payload.item_code),
         item_name: Set(payload.item_name),
+        item_category: Set(payload.item_category),
         unit: Set(payload.unit),
     };
+
     new_item
         .insert(&db)
         .await

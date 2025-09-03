@@ -76,6 +76,19 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_type(
+                Type::create()
+                    .as_enum(ItemCategory::Table)
+                    .values([
+                        ItemCategory::Feed,
+                        ItemCategory::Medicine,
+                        ItemCategory::Chicks,
+                    ])
+                    .to_owned(),
+            )
+            .await?;
+
         // Create users table
         manager
             .create_table(
@@ -130,6 +143,11 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(string_len(Items::ItemCode, 100).not_null().primary_key())
                     .col(string_len(Items::ItemName, 100).not_null())
+                    .col(
+                        ColumnDef::new(Items::ItemCategory)
+                            .custom(ItemCategory::Table)
+                            .not_null(),
+                    )
                     .col(string_len(Items::Unit, 50))
                     .to_owned(),
             )
@@ -470,6 +488,10 @@ impl MigrationTrait for Migration {
             .await?;
 
         manager
+            .drop_type(Type::drop().name(ItemCategory::Table).to_owned())
+            .await?;
+
+        manager
             .drop_table(Table::drop().table(ProductionLines::Table).to_owned())
             .await?;
 
@@ -689,6 +711,15 @@ pub enum Items {
     ItemCode, // string PK
     ItemName,
     Unit,
+    ItemCategory,
+}
+
+#[derive(DeriveIden)]
+enum ItemCategory {
+    Table,
+    Feed,
+    Medicine,
+    Chicks,
 }
 
 #[derive(DeriveIden)]
