@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use entity::{
-    batch_allocation_lines, batch_allocations, sea_orm_active_enums::RequirementStatus,
+    batch_allocation_lines, batch_allocations, items, ledger_accounts, ledger_entries,
+    sea_orm_active_enums::{ItemCategory, RequirementStatus},
     stock_receipts,
 };
 use entity::{
@@ -17,6 +18,7 @@ use sea_orm::{
     Set,
 };
 use sea_orm::{DatabaseTransaction, IntoActiveModel, TransactionTrait};
+use uuid::Uuid;
 
 use crate::models::{ApprovePayload, ResponseMessage};
 
@@ -237,6 +239,144 @@ async fn approve_and_allocate(
             "Partial allocation: shortage of {} units for item {}",
             qty_to_allocate, requirement.item_code
         ));
+    }
+
+    let item = items::Entity::find_by_id(requirement.item_code.clone())
+        .one(txn)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch item {}: {}", requirement.item_code, e);
+            format!("Failed to fetch item: {}", e)
+        })?
+        .ok_or_else(|| {
+            tracing::error!("Item {} not found", requirement.item_code);
+            format!("Item {} not found", requirement.item_code)
+        })?;
+
+    let (asset_account_id, expense_account_id) = match item.item_category {
+        ItemCategory::Medicine => (102_i32, 107_i32), // inventory-medicine -> farm-expense
+        ItemCategory::Feed => (103_i32, 107_i32),     // inventory-feed -> farm-expense
+        ItemCategory::Chicks => (104_i32, 107_i32),   // inventory-chicks -> farm-expense
+    };
+
+    let txn_group_id = Uuid::new_v4();
+
+    let credit_entry = ledger_entries::ActiveModel {
+        entry_id: Default::default(),
+        account_id: Set(asset_account_id),
+        debit: Set(None),
+        credit: Set(Some(total_value)),
+        txn_date: Set(chrono::Utc::now().date_naive()),
+        reference_table: Set(Some("allocations".into())),
+        narration: Set(Some(format!(
+            "approve of (requirement {})",
+            payload.requirement_id
+        ))),
+        txn_group_id: Set(txn_group_id),
+        reference_id: Set(Some(allocation_model.allocation_id)),
+        created_by: Set(Some(payload.allocated_by)),
+        created_at: Set(chrono::Utc::now().into()),
+        ..Default::default()
+    };
+
+    credit_entry.insert(txn).await.map_err(|e| {
+        tracing::error!("Failed to insert credit entry: {}", e);
+        format!("Failed to insert credit entry: {}", e)
+    })?;
+
+    let debit_entry = ledger_entries::ActiveModel {
+        entry_id: Default::default(),
+        account_id: Set(expense_account_id),
+        debit: Set(Some(total_value)),
+        credit: Set(None),
+        narration: Set(Some(format!(
+            "Allocation of - Req #{}",
+            payload.requirement_id
+        ))),
+        txn_date: Set(chrono::Utc::now().date_naive()),
+        reference_table: Set(Some("allocations".into())),
+        reference_id: Set(Some(allocation_model.allocation_id)),
+        created_by: Set(Some(payload.allocated_by)),
+        created_at: Set(chrono::Utc::now().into()),
+        txn_group_id: Set(txn_group_id),
+        ..Default::default()
+    };
+
+    debit_entry.insert(txn).await.map_err(|e| {
+        tracing::error!("Failed to insert debit entry: {}", e);
+        format!("Failed to insert debit entry: {}", e)
+    })?;
+
+    if let Some(asset_account) = ledger_accounts::Entity::find_by_id(asset_account_id)
+        .one(txn)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch asset account {}: {}", asset_account_id, e);
+            format!("Failed to fetch asset account: {}", e)
+        })?
+    {
+        let mut asset_active: ledger_accounts::ActiveModel = asset_account.into();
+        let current_balance = asset_active.current_balance.take().unwrap_or_default();
+        tracing::debug!(
+            "Asset account {} current_balance={} total_value={}",
+            asset_account_id,
+            current_balance,
+            total_value
+        );
+
+        asset_active.current_balance = Set(current_balance - total_value);
+
+        asset_active.update(txn).await.map_err(|e| {
+            tracing::error!(
+                "Failed to update asset account {} balance: {}",
+                asset_account_id,
+                e
+            );
+            format!("Failed to update asset account balance: {}", e)
+        })?;
+        tracing::info!(
+            "Updated asset account {} balance -> {}",
+            asset_account_id,
+            current_balance - total_value
+        );
+    }
+
+    if let Some(expense_account) = ledger_accounts::Entity::find_by_id(expense_account_id)
+        .one(txn)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to fetch expense account {}: {}",
+                expense_account_id,
+                e
+            );
+            format!("Failed to fetch expense account: {}", e)
+        })?
+    {
+        let mut expense_active: ledger_accounts::ActiveModel = expense_account.into();
+        let current_balance = expense_active.current_balance.take().unwrap_or_default();
+        tracing::debug!(
+            "Expense account {} current_balance={} total_value={}",
+            expense_account_id,
+            current_balance,
+            total_value
+        );
+
+        expense_active.current_balance = Set(current_balance + total_value);
+
+        expense_active.update(txn).await.map_err(|e| {
+            tracing::error!(
+                "Failed to update expense account {} balance: {}",
+                expense_account_id,
+                e
+            );
+            format!("Failed to update expense account balance: {}", e)
+        })?;
+        tracing::info!(
+            "Updated expense account {} balance -> {}",
+            expense_account_id,
+            current_balance + total_value
+        );
     }
 
     Ok(format!(
