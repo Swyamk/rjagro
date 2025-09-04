@@ -1,13 +1,14 @@
 'use client'
 import React, { useMemo, useState } from 'react';
 import { Plus, X, Save, IndianRupee } from 'lucide-react';
-import { Batch, BatchAllocation, BatchPayload, BatchRequirement, CreateFarmerCommission, Farmer, FarmerCommissionHistory, SupervisorSimplified } from '@/app/types/interfaces';
+import { Batch, BatchAllocation, BatchPayload, BatchRequirement, CreateFarmerCommission, Farmer, FarmerCommissionHistory, SupervisorSimplified, Item } from '@/app/types/interfaces';
 import { useAuth } from '@/app/hooks/useAuth';
 
 interface BatchesTableProps {
     batches: Batch[];
     farmers: Farmer[];
     supervisors: SupervisorSimplified[];
+    items: Item[]; // Add items prop
     batchAllocations: BatchAllocation[];
     requirements: BatchRequirement[];
     loading: boolean;
@@ -40,7 +41,7 @@ const classifyName = (name = '') => {
 };
 
 const BatchesTable: React.FC<BatchesTableProps> = ({
-    batches, farmers, supervisors,
+    batches, farmers, supervisors, items,
     loading, showAddForm, newBatch,
     setShowAddForm, setNewBatch,
     handleAddBatch,
@@ -55,6 +56,7 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
     const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
     const [activeTab, setActiveTab] = useState<'Feed' | 'Chicks' | 'Medicine' | 'FarmerCommission' | 'Summary'>('Feed');
 
+    newBatch.created_by = user?.user_id ?? "";
     // Commission form state
     const [showCommissionForm, setShowCommissionForm] = useState(false);
     const [newCommission, setNewCommission] = useState<CreateFarmerCommission>({
@@ -63,6 +65,33 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
         description: '',
         created_by: user?.user_id
     });
+
+    // Filter items by Chick category
+    const chickItems = useMemo(() => {
+        return items.filter(item =>
+            item.item_category && item.item_category.toLowerCase().includes('chick')
+        );
+    }, [items]);
+
+    // Handle multiple chick items selection
+    const handleChickItemToggle = (itemCode: string) => {
+        setNewBatch(prev => {
+            const currentItems = prev.chick_item_code || [];
+            const isSelected = currentItems.includes(itemCode);
+
+            if (isSelected) {
+                return {
+                    ...prev,
+                    chick_item_code: currentItems.filter(code => code !== itemCode)
+                };
+            } else {
+                return {
+                    ...prev,
+                    chick_item_code: [...currentItems, itemCode]
+                };
+            }
+        });
+    };
 
     const openBatchModal = (batch: Batch) => {
         setSelectedBatch(batch);
@@ -257,7 +286,50 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                             />
                         </div>
 
-                        <div className="flex items-end">
+                        {/* Chick Items Multiple Selection Dropdown */}
+                        <div className="md:col-span-2 lg:col-span-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Select Chick Items
+                            </label>
+                            <div className="border border-gray-300 rounded-lg max-h-40 overflow-y-auto bg-white">
+                                {chickItems.length === 0 ? (
+                                    <div className="p-3 text-gray-500 text-sm">
+                                        No chick items available
+                                    </div>
+                                ) : (
+                                    <div className="p-2">
+                                        {chickItems.map((item) => (
+                                            <label
+                                                key={item.item_code}
+                                                className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={(newBatch.chick_item_code || []).includes(item.item_code)}
+                                                    onChange={() => handleChickItemToggle(item.item_code)}
+                                                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {item.item_name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        Code: {item.item_code} | Unit: {item.unit}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {newBatch.chick_item_code && newBatch.chick_item_code.length > 0 && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                    Selected items: {newBatch.chick_item_code.length}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-end md:col-span-2 lg:col-span-3">
                             <button
                                 onClick={handleAddBatch}
                                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -346,6 +418,7 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                 </table>
             </div>
 
+            {/* Modal content remains the same as in original component */}
             {/* Modal */}
             {modalOpen && selectedBatch && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -687,4 +760,3 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
 };
 
 export default BatchesTable;
-

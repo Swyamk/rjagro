@@ -143,6 +143,8 @@ export interface BatchPayload {
   end_date: string;
   initial_bird_count: number | '';
   current_bird_count: number | '';
+  chick_item_code: string[];
+  created_by:number | '';
 }
 
 export interface BatchRequirement {
@@ -384,16 +386,16 @@ export interface PurchasePayload {
 
 
 export interface FarmerCommissionHistory {
-    id: number;
-    farmer_id: number;
-    commission_amount: number;
-    description?: string;
-    created_at: string;
+  id: number;
+  farmer_id: number;
+  commission_amount: number;
+  description?: string;
+  created_at: string;
 }
 
 export interface CreateFarmerCommission {
-    farmer_id: number;
-    commission_amount: number | '';
-    description: string;
-    created_by?: number;
+  farmer_id: number;
+  commission_amount: number | '';
+  description: string;
+  created_by?: number;
 }

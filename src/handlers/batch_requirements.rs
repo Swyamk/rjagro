@@ -119,7 +119,7 @@ async fn approve_and_allocate(
     // 3. Insert allocation
     let allocation = batch_allocations::ActiveModel {
         allocation_id: Default::default(),
-        requirement_id: Set(payload.requirement_id),
+        requirement_id: Set(Some(payload.requirement_id)),
         allocated_qty: Set(payload.allocated_qty),
         allocation_date: Set(payload.allocation_date),
         allocated_value: Set(Decimal::ZERO), // to be updated after FIFO allocation

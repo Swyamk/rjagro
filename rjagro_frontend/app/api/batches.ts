@@ -24,6 +24,8 @@ export const handleAddBatch = async (
         return;
     }
 
+    console.log("Payload in handleAddBatch:", payload);
+
     setLoading(true);
     toast.info("Adding batch...");
 

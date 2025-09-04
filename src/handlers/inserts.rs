@@ -43,30 +43,6 @@ pub async fn create_item(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
-/// Batches
-pub async fn create_batch(
-    State(db): State<DatabaseConnection>,
-    Json(payload): Json<CreateBatch>,
-) -> Result<Json<batches::Model>, StatusCode> {
-    let new_batch = batches::ActiveModel {
-        line_id: Set(payload.line_id),
-        supervisor_id: Set(payload.supervisor_id),
-        farmer_id: Set(payload.farmer_id),
-        start_date: Set(payload.start_date),
-        end_date: Set(payload.end_date),
-        initial_bird_count: Set(payload.initial_bird_count),
-        current_bird_count: Set(payload.current_bird_count),
-        ..Default::default()
-    };
-
-    new_batch
-        .insert(&db)
-        .await
-        .map(Json)
-        .inspect_err(|err| eprintln!("Failed to insert batch: {}", err))
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-}
-
 pub async fn create_batch_requirement(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<CreateBatchRequirement>,
@@ -99,7 +75,7 @@ pub async fn create_batch_allocation(
     Json(payload): Json<CreateBatchAllocation>,
 ) -> Result<Json<batch_allocations::Model>, StatusCode> {
     let new_alloc = batch_allocations::ActiveModel {
-        requirement_id: Set(payload.requirement_id),
+        requirement_id: Set(Some(payload.requirement_id)),
         allocated_qty: Set(payload.allocated_qty),
         allocation_date: Set(payload.allocation_date),
         allocated_by: Set(payload.allocated_by),

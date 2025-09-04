@@ -8,7 +8,7 @@ use serde::Serialize;
 pub struct Model {
     #[sea_orm(primary_key)]
     pub allocation_id: i32,
-    pub requirement_id: i32,
+    pub requirement_id: Option<i32>,
     #[sea_orm(column_type = "Decimal(Some((12, 2)))")]
     pub allocated_qty: Decimal,
     pub allocation_date: Date,

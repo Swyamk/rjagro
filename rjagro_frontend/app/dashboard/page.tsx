@@ -188,7 +188,9 @@ const Dashboard = () => {
         start_date: new Date().toISOString().slice(0, 10),
         end_date: new Date().toISOString().slice(0, 10),
         initial_bird_count: '',
-        current_bird_count: ''
+        current_bird_count: '',
+        chick_item_code: [],
+        created_by: '',
     });
 
     // Requirements state
@@ -576,6 +578,7 @@ const Dashboard = () => {
                         batches={batches}
                         farmers={farmers}
                         supervisors={supervisors}
+                        items={items}
                         loading={loading}
                         showAddForm={showAddForm}
                         newBatch={newBatch}

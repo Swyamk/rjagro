@@ -58,7 +58,8 @@ pub struct CreateBatch {
     pub start_date: chrono::NaiveDate,
     pub end_date: chrono::NaiveDate,
     pub initial_bird_count: i32,
-    pub current_bird_count: Option<i32>,
+    pub chick_item_code: Vec<String>,
+    pub created_by: i32,
 }
 
 #[derive(Deserialize)]
