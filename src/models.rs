@@ -118,7 +118,7 @@ pub struct CreateBirdCountHistory {
     pub record_date: chrono::NaiveDate,
     pub deaths: i32,
     pub additions: i32,
-    pub notes: String,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize)]

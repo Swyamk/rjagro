@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use entity::{
-    batch_allocation_lines, batch_allocations, items, ledger_accounts, ledger_entries,
+    batch_allocation_lines, batch_allocations, batches, bird_count_history, items, ledger_accounts,
+    ledger_entries,
     sea_orm_active_enums::{ItemCategory, RequirementStatus},
     stock_receipts,
 };
@@ -258,6 +259,50 @@ async fn approve_and_allocate(
         ItemCategory::Feed => (103_i32, 107_i32),     // inventory-feed -> farm-expense
         ItemCategory::Chicks => (104_i32, 107_i32),   // inventory-chicks -> farm-expense
     };
+
+    if let ItemCategory::Chicks = item.item_category {
+        // Convert allocated_qty (Decimal) to i32 for bird_count_history.additions
+        // (Assumes allocated_qty is a whole number — adjust conversion as needed)
+        let additions_i32: i32 = payload
+            .allocated_qty
+            .to_string()
+            .parse::<i32>()
+            .unwrap_or_default();
+
+        // Insert bird count history
+        let bird_history = bird_count_history::ActiveModel {
+            record_id: Default::default(),
+            batch_id: Set(requirement.batch_id),
+            record_date: Set(payload.allocation_date),
+            deaths: Set(0),
+            additions: Set(additions_i32),
+            notes: Set(format!(
+                "{} birds added on {} (Allocation #{})",
+                additions_i32, payload.allocation_date, allocation_model.allocation_id
+            )),
+            created_at: Set(chrono::Utc::now().into()),
+        };
+
+        bird_history
+            .insert(txn)
+            .await
+            .map_err(|e| format!("Failed to insert bird_count_history: {}", e))?;
+
+        // Update batches.current_bird_count
+        if let Some(batch) = batches::Entity::find_by_id(requirement.batch_id)
+            .one(txn)
+            .await
+            .map_err(|e| format!("Failed to fetch batch {}: {}", requirement.batch_id, e))?
+        {
+            let current = batch.current_bird_count.unwrap_or(0);
+            let mut batch_active: batches::ActiveModel = batch.into();
+            batch_active.current_bird_count = Set(Some(current + additions_i32));
+            batch_active
+                .update(txn)
+                .await
+                .map_err(|e| format!("Failed to update batch bird count: {}", e))?;
+        }
+    }
 
     let txn_group_id = Uuid::new_v4();
 

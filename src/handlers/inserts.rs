@@ -159,19 +159,58 @@ pub async fn create_bird_count_history(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<CreateBirdCountHistory>,
 ) -> Result<Json<bird_count_history::Model>, StatusCode> {
+    let txn = db
+        .begin()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Insert into bird_count_history
     let new_record = bird_count_history::ActiveModel {
         batch_id: Set(payload.batch_id),
         record_date: Set(payload.record_date),
         deaths: Set(payload.deaths),
         additions: Set(payload.additions),
-        notes: Set(payload.notes),
+        notes: Set(payload.notes.unwrap_or_else(|| {
+            if payload.additions > 0 {
+                format!(
+                    "{} birds added on {}",
+                    payload.additions, payload.record_date
+                )
+            } else if payload.deaths > 0 {
+                format!("{} birds died on {}", payload.deaths, payload.record_date)
+            } else {
+                format!("No change on {}", payload.record_date)
+            }
+        })),
         ..Default::default()
     };
-    new_record
-        .insert(&db)
+
+    let record = new_record
+        .insert(&txn)
         .await
-        .map(Json)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let batch = batches::Entity::find_by_id(payload.batch_id)
+        .one(&txn)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let new_count = batch.current_bird_count.unwrap_or(0) + payload.additions - payload.deaths;
+
+    let mut batch_model: batches::ActiveModel = batch.into();
+    batch_model.current_bird_count = Set(Some(new_count));
+
+    batch_model
+        .update(&txn)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    txn.commit()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(record))
 }
 
 /// Bird Sell History
