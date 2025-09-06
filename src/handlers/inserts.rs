@@ -1,6 +1,7 @@
 use crate::models::*;
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::Utc;
+use entity::sea_orm_active_enums::BatchStatus;
 use entity::{sea_orm_active_enums::RequirementStatus, *};
 use sea_orm::EntityTrait;
 use sea_orm::TransactionTrait;
@@ -371,4 +372,50 @@ pub async fn create_farmer_commission(
     })?;
 
     Ok(Json(saved_commission))
+}
+
+pub async fn create_batch_closure_summary(
+    State(db): State<DatabaseConnection>,
+    Json(payload): Json<CreateBatchClosureSummary>,
+) -> Result<Json<batch_closure_summary::Model>, StatusCode> {
+    let txn = db
+        .begin()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let new_record = batch_closure_summary::ActiveModel {
+        batch_id: Set(payload.batch_id),
+        start_date: Set(payload.start_date),
+        end_date: Set(payload.end_date),
+        initial_chicken_count: Set(payload.initial_chicken_count),
+        available_chicken_count: Set(payload.available_chicken_count),
+        revenue: Set(payload.revenue),
+        gross_profit: Set(payload.gross_profit),
+        ..Default::default()
+    };
+
+    let inserted = new_record
+        .insert(&txn)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mut batch: batches::ActiveModel = batches::Entity::find_by_id(payload.batch_id)
+        .one(&txn)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?
+        .into();
+
+    batch.status = Set(BatchStatus::Closed);
+
+    batch
+        .update(&txn)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    txn.commit()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(inserted))
 }

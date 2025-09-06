@@ -449,3 +449,15 @@ pub async fn get_all_farmer_commission_history_handler(
         }
     }
 }
+
+pub async fn get_batch_closure_summary_handler(
+    State(db): State<DatabaseConnection>,
+) -> impl IntoResponse {
+    match batch_closure_summary::Entity::find().all(&db).await {
+        Ok(data) => Json(data).into_response(),
+        Err(e) => {
+            eprintln!("Failed to fetch batch closure summaries: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}

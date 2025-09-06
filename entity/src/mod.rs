@@ -4,6 +4,7 @@ pub mod prelude;
 
 pub mod batch_allocation_lines;
 pub mod batch_allocations;
+pub mod batch_closure_summary;
 pub mod batch_requirements;
 pub mod batches;
 pub mod bird_count_history;

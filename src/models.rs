@@ -201,3 +201,14 @@ pub struct CreateFarmerCommission {
     pub description: Option<String>,
     pub created_by: Option<i32>,
 }
+
+#[derive(Deserialize)]
+pub struct CreateBatchClosureSummary {
+    pub batch_id: i32,
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub initial_chicken_count: i32,
+    pub available_chicken_count: i32,
+    pub revenue: Decimal,
+    pub gross_profit: Decimal,
+}

@@ -14,7 +14,7 @@ import TradersTable from '../components/tables/traders';
 import { fetchProductionLines, handleAddProductionLine } from '../api/production_line';
 import ProductionLinesTable from '../components/tables/production_lines';
 import { fetchSupervisors } from '../api/supervisors';
-import { fetchBatches, fetchFarmerCommissionHistory, handleAddBatch, handleAddFarmerCommission } from '../api/batches';
+import { fetchBatchClosures, fetchBatches, fetchFarmerCommissionHistory, handleAddBatch, handleAddFarmerCommission, handleCloseBatch } from '../api/batches';
 import BatchesTable from '../components/tables/batches';
 import { fetchBatchRequirements, handleAddBatchRequirement } from '../api/batch_requirements';
 import BatchRequirementsTable from '../components/tables/batch_requirements';
@@ -25,7 +25,7 @@ import { fetchInventory, handleAddInventory, handleUpdateInventory } from '../ap
 import InventoryTable from '../components/tables/inventory';
 import { fetchInventoryMovements, handleAddInventoryMovement } from '../api/inventory_movement';
 import InventoryMovementsTable from '../components/tables/inventory_movement';
-import { BatchAllocationLinePayload, BatchPayload, CreateFarmerCommission, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewBirdCountHistory, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerAccount, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, PurchasePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
+import { BatchAllocationLinePayload, BatchClosurePayload, BatchPayload, CreateFarmerCommission, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewBirdCountHistory, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerAccount, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, PurchasePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
 import { fetchLedgerEntries, handleAddLedgerEntry } from '../api/ledger_entries';
 import LedgerEntriesTable from '../components/tables/ledger_entries';
 import { fetchStockReceipts, handleAddStockReceipt } from '../api/stock_receipts';
@@ -36,6 +36,7 @@ import { fetchLedgerAccounts, handleAddLedgerAccount } from '../api/ledger_accou
 import LedgerAccountsTable from '../components/tables/ledger_accounts';
 import { fetchBirdCountHistory, handleAddBirdCountHistory } from '../api/bird_count_history';
 import BirdCountHistoryTable from '../components/tables/bird_count_history';
+import BatchClosureSummaryTable from '../components/tables/batch_closure_summary';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -406,7 +407,7 @@ const Dashboard = () => {
 
     const tabs = [
         'Users', 'Ledger Accounts', 'Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Stock Receipts', 'Batch Allocation Lines', 'Batches', 'Batch Requirements',
-        'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Bird Count History', 'Bird Sell History'
+        'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Batch Closures', 'Bird Count History', 'Bird Sell History'
     ];
 
     const onAddFarmerCommission = async (commission: CreateFarmerCommission) => {
@@ -474,6 +475,16 @@ const Dashboard = () => {
         }
     };
 
+    const [batchClosureLoading, setBatchClosureLoading] = useState(false);
+
+    const onCloseBatch = async (batchClosure: BatchClosurePayload) => {
+        await handleCloseBatch(
+            batchClosure,
+            queryClient,
+            setBatchClosureLoading,
+        );
+    };
+
     const finalStockReceipt: StockReceiptPayload = {
         purchase_id: newStockReceipt.purchase_id ? Number(newStockReceipt.purchase_id) : undefined,
         item_code: newStockReceipt.item_code,
@@ -482,6 +493,14 @@ const Dashboard = () => {
         received_date: newStockReceipt.received_date,
         supplier: newStockReceipt.supplier || undefined,
     };
+
+    const { data: batchClosures = [], isLoading: loadingBatchClosures } = useQuery({
+        queryKey: ["batch_closures"],
+        queryFn: fetchBatchClosures,
+        staleTime: 5 * 60 * 1000,
+    });
+
+
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -606,6 +625,8 @@ const Dashboard = () => {
                         commissionHistory={commissionHistory}
                         onAddCommission={onAddFarmerCommission}
                         commissionLoading={commissionLoading}
+                        onCloseBatch={onCloseBatch}
+                        batchClosureLoading={batchClosureLoading}
                     />
                 )}
 
@@ -796,6 +817,16 @@ const Dashboard = () => {
                     />
                 )}
 
+                {activeTab === 'Batch Closures' && (
+                    <BatchClosureSummaryTable
+                        batchClosures={batchClosures}
+                        batches={batches}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        setShowAddForm={setShowAddForm}
+                    />
+                )}
+
                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
                     activeTab !== 'Traders' &&
                     activeTab !== 'Production Lines' &&
@@ -808,13 +839,16 @@ const Dashboard = () => {
                     activeTab !== 'Stock Receipts' &&
                     activeTab !== 'Batch Allocation Lines' &&
                     activeTab !== 'Ledger Accounts' &&
-                    activeTab !== 'Bird Count History' && (
+                    activeTab !== 'Bird Count History' &&
+                    activeTab !== 'Batch Closures' && (
 
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
                             <p className="text-gray-600">This section is under development</p>
                         </div>
                     )}
+
+
 
             </div>
         </div>

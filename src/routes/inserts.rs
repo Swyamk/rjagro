@@ -4,7 +4,7 @@ use entity::sea_orm_active_enums::UserRole;
 use sea_orm::DatabaseConnection;
 
 use crate::handlers::batches::create_batch;
-use crate::handlers::inserts::create_farmer_commission;
+use crate::handlers::inserts::{create_batch_closure_summary, create_farmer_commission};
 use crate::{
     auth::middleware::{require_roles_middleware, RequireRoles},
     handlers::{
@@ -20,6 +20,7 @@ use crate::{
 pub fn insert_routes() -> Router<DatabaseConnection> {
     Router::new()
         .route("/ledger_account", post(create_ledger_account))
+        .route("/batch_closure_summary", post(create_batch_closure_summary))
         .layer(from_fn_with_state(
             RequireRoles::new(&[UserRole::Admin]),
             require_roles_middleware,

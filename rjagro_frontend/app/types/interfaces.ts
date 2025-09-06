@@ -144,7 +144,7 @@ export interface BatchPayload {
   initial_bird_count: number | '';
   current_bird_count: number | '';
   chick_item_code: string[];
-  created_by:number | '';
+  created_by: number | '';
 }
 
 export interface BatchRequirement {
@@ -401,29 +401,60 @@ export interface CreateFarmerCommission {
 }
 
 export interface BirdCountHistory {
-    record_id: number;
-    batch_id: number;
-    batch_line_id?: number;
-    farmer_name?: string;
-    record_date: string;
-    deaths: number;
-    additions: number;
-    notes: string;
-    created_at: string;
+  record_id: number;
+  batch_id: number;
+  batch_line_id?: number;
+  farmer_name?: string;
+  record_date: string;
+  deaths: number;
+  additions: number;
+  notes: string;
+  created_at: string;
 }
 
 export interface BirdCountHistoryPayload {
-    batch_id: number;
-    record_date: string;
-    deaths: number;
-    additions: number;
-    notes?: string;
+  batch_id: number;
+  record_date: string;
+  deaths: number;
+  additions: number;
+  notes?: string;
 }
 
 export interface NewBirdCountHistory {
-    batch_id: number | '';
-    record_date: string;
-    deaths: number | '';
-    additions: number | '';
-    notes: string;
+  batch_id: number | '';
+  record_date: string;
+  deaths: number | '';
+  additions: number | '';
+  notes: string;
+}
+
+export interface BatchClosure {
+  id: number;
+  batch_id: number;
+  start_date: string;
+  end_date: string;
+  initial_chicken_count: number;
+  available_chicken_count: number;
+  revenue: number;
+  gross_profit: number;
+}
+
+export interface BatchClosurePayload {
+  batch_id: number;
+  start_date: string;
+  end_date: string;
+  initial_chicken_count: number;
+  available_chicken_count: number;
+  revenue: number;
+  gross_profit: number;
+}
+
+export interface CreateBatchClosure {
+  batch_id: number | '';
+  start_date: string;
+  end_date: string;
+  initial_chicken_count: number | '';
+  available_chicken_count: number | '';
+  revenue: number | '';
+  gross_profit: number | '';
 }

@@ -1,4 +1,4 @@
-import { Batch, BatchPayload, CreateFarmerCommission, FarmerCommissionHistory } from '../types/interfaces';
+import { Batch, BatchClosure, BatchClosurePayload, BatchPayload, CreateFarmerCommission, FarmerCommissionHistory } from '../types/interfaces';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 
@@ -89,4 +89,42 @@ export const handleAddFarmerCommission = async (
     } finally {
         setLoading(false);
     }
+};
+export const handleCloseBatch = async (
+    payload: BatchClosurePayload,
+    queryClient: any,
+    setLoading: (loading: boolean) => void,
+    onSuccess?: () => void
+) => {
+    if (
+        !payload.batch_id ||
+        !payload.start_date ||
+        !payload.end_date ||
+        !payload.initial_chicken_count ||
+        !payload.available_chicken_count
+    ) {
+        toast.error("Please fill in all required fields");
+        return;
+    }
+
+    setLoading(true);
+    toast.info("Closing batch...");
+
+    try {
+        await api.post("/insert/batch_closure_summary", payload);
+        queryClient.invalidateQueries(["batch_closures"]);
+        queryClient.invalidateQueries(["batches"]);
+        toast.success("Batch closed successfully!");
+        if (onSuccess) onSuccess();
+    } catch (error) {
+        console.error("Error closing batch:", error);
+        toast.error("Error closing batch");
+    } finally {
+        setLoading(false);
+    }
+};
+
+export const fetchBatchClosures = async (): Promise<BatchClosure[]> => {
+    const response = await api.get("/getall/batch_closure_summary");
+    return response.data;
 };
