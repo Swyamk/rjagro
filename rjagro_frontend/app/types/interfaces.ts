@@ -399,3 +399,31 @@ export interface CreateFarmerCommission {
   description: string;
   created_by?: number;
 }
+
+export interface BirdCountHistory {
+    record_id: number;
+    batch_id: number;
+    batch_line_id?: number;
+    farmer_name?: string;
+    record_date: string;
+    deaths: number;
+    additions: number;
+    notes: string;
+    created_at: string;
+}
+
+export interface BirdCountHistoryPayload {
+    batch_id: number;
+    record_date: string;
+    deaths: number;
+    additions: number;
+    notes?: string;
+}
+
+export interface NewBirdCountHistory {
+    batch_id: number | '';
+    record_date: string;
+    deaths: number | '';
+    additions: number | '';
+    notes: string;
+}
