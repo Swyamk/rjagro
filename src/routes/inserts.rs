@@ -3,6 +3,7 @@ use axum::{routing::post, Router};
 use entity::sea_orm_active_enums::UserRole;
 use sea_orm::DatabaseConnection;
 
+use crate::handlers::batch_sales::create_batch_sale;
 use crate::handlers::batches::create_batch;
 use crate::handlers::inserts::{create_batch_closure_summary, create_farmer_commission};
 use crate::{
@@ -21,6 +22,7 @@ pub fn insert_routes() -> Router<DatabaseConnection> {
     Router::new()
         .route("/ledger_account", post(create_ledger_account))
         .route("/batch_closure_summary", post(create_batch_closure_summary))
+        .route("/batch_sales", post(create_batch_sale))
         .layer(from_fn_with_state(
             RequireRoles::new(&[UserRole::Admin]),
             require_roles_middleware,

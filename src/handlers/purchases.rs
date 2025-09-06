@@ -203,7 +203,7 @@ async fn insert_ledger_entries<C: TransactionTrait + sea_orm::ConnectionTrait>(
     Ok(())
 }
 
-async fn update_account_balance<C: TransactionTrait + sea_orm::ConnectionTrait>(
+pub async fn update_account_balance<C: TransactionTrait + sea_orm::ConnectionTrait>(
     txn: &C,
     account_id: i32,
     amount: Option<Decimal>,
@@ -254,7 +254,7 @@ async fn update_account_balance<C: TransactionTrait + sea_orm::ConnectionTrait>(
     Ok(())
 }
 
-fn internal_error<E: std::fmt::Display>(action: &'static str) -> impl FnOnce(E) -> StatusCode {
+pub fn internal_error<E: std::fmt::Display>(action: &'static str) -> impl FnOnce(E) -> StatusCode {
     move |err| {
         eprintln!("Failed to {}: {}", action, err);
         StatusCode::INTERNAL_SERVER_ERROR

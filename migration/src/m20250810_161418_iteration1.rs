@@ -84,6 +84,7 @@ impl MigrationTrait for Migration {
                         ItemCategory::Feed,
                         ItemCategory::Medicine,
                         ItemCategory::Chicks,
+                        ItemCategory::FinishedBirds,
                     ])
                     .to_owned(),
             )
@@ -601,7 +602,7 @@ pub enum Purchases {
 }
 
 #[derive(DeriveIden)]
-enum Batches {
+pub enum Batches {
     Table,
     BatchId,
     LineId,
@@ -654,7 +655,7 @@ pub enum Farmers {
 }
 
 #[derive(DeriveIden)]
-enum Traders {
+pub enum Traders {
     Table,
     TraderId,
     Name,
@@ -720,6 +721,7 @@ enum ItemCategory {
     Feed,
     Medicine,
     Chicks,
+    FinishedBirds,
 }
 
 #[derive(DeriveIden)]

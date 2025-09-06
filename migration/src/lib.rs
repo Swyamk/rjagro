@@ -7,6 +7,7 @@ mod m20250819_215006_ledger;
 mod m20250826_234204_stock_receipts;
 mod m20250901_223316_farmer_commission;
 mod m20250906_182108_closed_batches;
+mod m20250906_211511_batch_sales;
 
 pub struct Migrator;
 
@@ -21,6 +22,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250826_234204_stock_receipts::Migration),
             Box::new(m20250901_223316_farmer_commission::Migration),
             Box::new(m20250906_182108_closed_batches::Migration),
+            Box::new(m20250906_211511_batch_sales::Migration),
         ]
     }
 }

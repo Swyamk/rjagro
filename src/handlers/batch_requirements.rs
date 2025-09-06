@@ -258,6 +258,7 @@ async fn approve_and_allocate(
         ItemCategory::Medicine => (102_i32, 107_i32), // inventory-medicine -> farm-expense
         ItemCategory::Feed => (103_i32, 107_i32),     // inventory-feed -> farm-expense
         ItemCategory::Chicks => (104_i32, 107_i32),   // inventory-chicks -> farm-expense
+        ItemCategory::FinishedBirds => (105_i32, 107_i32), // this is wrong
     };
 
     if let ItemCategory::Chicks = item.item_category {

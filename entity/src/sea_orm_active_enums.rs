@@ -112,4 +112,6 @@ pub enum ItemCategory {
     Medicine,
     #[sea_orm(string_value = "chicks")]
     Chicks,
+    #[sea_orm(string_value = "finished_birds")]
+    FinishedBirds,
 }

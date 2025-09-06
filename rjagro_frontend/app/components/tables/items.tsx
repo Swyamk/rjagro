@@ -99,6 +99,7 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                             <option value="feed">Feed</option>
                             <option value="medicine">Medicine</option>
                             <option value="chicks">Chicks</option>
+                            <option value="FinishedBirds">FinishedBirds</option>
                         </select>
                     </div>
 

@@ -461,3 +461,13 @@ pub async fn get_batch_closure_summary_handler(
         }
     }
 }
+
+pub async fn get_batch_sales_handler(State(db): State<DatabaseConnection>) -> impl IntoResponse {
+    match batch_sales::Entity::find().all(&db).await {
+        Ok(data) => Json(data).into_response(),
+        Err(e) => {
+            eprintln!("Failed to fetch batch sales: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}

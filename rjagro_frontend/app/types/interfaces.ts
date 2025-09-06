@@ -1,7 +1,9 @@
+import { ItemCategory } from "./enums";
+
 export interface Item {
   item_code: string;
   item_name: string;
-  item_category: string;
+  item_category: ItemCategory;
   unit: string;
 }
 
@@ -457,4 +459,43 @@ export interface CreateBatchClosure {
   available_chicken_count: number | '';
   revenue: number | '';
   gross_profit: number | '';
+}
+
+export interface BatchSale {
+  id: number;
+  item_code: string;
+  item_name: string; 
+  batch_id: number;
+  farmer_name: string; 
+  trader_id: number;
+  trader_name: string; 
+  avg_weight: number;
+  rate: number;
+  quantity: number;
+  value: number;
+  created_at: string;
+}
+
+export interface BatchSalePayload {
+  item_code: string;
+  batch_id: number;
+  trader_id: number;
+  avg_weight: number;
+  rate: number;
+  quantity: number;
+  value: number;
+  created_by: number;
+}
+
+export interface NewBatchSale {
+  item_code: string;
+  item_name: string; 
+  batch_id: number | '';
+  farmer_name: string; 
+  trader_id: number | '';
+  trader_name: string; 
+  avg_weight: number | '';
+  rate: number | '';
+  quantity: number | '';
+  value: number | '';
 }

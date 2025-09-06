@@ -1,4 +1,5 @@
 pub mod batch_requirements;
+pub mod batch_sales;
 pub mod batches;
 pub mod fetch_all;
 pub mod fetch_by_id;

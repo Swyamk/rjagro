@@ -212,3 +212,15 @@ pub struct CreateBatchClosureSummary {
     pub revenue: Decimal,
     pub gross_profit: Decimal,
 }
+
+#[derive(serde::Deserialize)]
+pub struct CreateBatchSale {
+    pub item_code: String,
+    pub batch_id: i32,
+    pub trader_id: i32,
+    pub avg_weight: Decimal,
+    pub rate: Decimal,
+    pub quantity: Decimal,
+    pub value: Decimal,
+    pub created_by: i32,
+}

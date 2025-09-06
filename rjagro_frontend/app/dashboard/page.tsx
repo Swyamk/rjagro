@@ -25,7 +25,7 @@ import { fetchInventory, handleAddInventory, handleUpdateInventory } from '../ap
 import InventoryTable from '../components/tables/inventory';
 import { fetchInventoryMovements, handleAddInventoryMovement } from '../api/inventory_movement';
 import InventoryMovementsTable from '../components/tables/inventory_movement';
-import { BatchAllocationLinePayload, BatchClosurePayload, BatchPayload, CreateFarmerCommission, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewBirdCountHistory, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerAccount, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, PurchasePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
+import { BatchAllocationLinePayload, BatchClosurePayload, BatchPayload, BatchSalePayload, CreateFarmerCommission, InventoryMovementPayload, InventoryPayload, Item, LedgerAccountType, LedgerEntryPayload, MovementType, NewBatchAllocationLine, NewBatchRequirement, NewBatchSale, NewBirdCountHistory, NewFarmer, NewInventory, NewInventoryMovement, NewLedgerAccount, NewLedgerEntry, NewPurchase, NewStockReceipt, NewTrader, ProductionLinePayload, PurchasePayload, StockReceiptPayload, SupplierPayload, SupplierType } from '../types/interfaces';
 import { fetchLedgerEntries, handleAddLedgerEntry } from '../api/ledger_entries';
 import LedgerEntriesTable from '../components/tables/ledger_entries';
 import { fetchStockReceipts, handleAddStockReceipt } from '../api/stock_receipts';
@@ -37,6 +37,9 @@ import LedgerAccountsTable from '../components/tables/ledger_accounts';
 import { fetchBirdCountHistory, handleAddBirdCountHistory } from '../api/bird_count_history';
 import BirdCountHistoryTable from '../components/tables/bird_count_history';
 import BatchClosureSummaryTable from '../components/tables/batch_closure_summary';
+import { fetchBatchSales, handleAddBatchSale } from '../api/batch_sales';
+import BatchSalesTable from '../components/tables/batch_sales';
+import { ItemCategory } from '../types/enums';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -91,8 +94,9 @@ const Dashboard = () => {
         item_code: '',
         item_name: '',
         unit: '',
-        item_category: ''
+        item_category: ItemCategory.Feed
     });
+
     const [showAddItemForm, setShowAddItemForm] = useState(false);
 
     // Farmers state
@@ -407,7 +411,7 @@ const Dashboard = () => {
 
     const tabs = [
         'Users', 'Ledger Accounts', 'Ledger Entries', 'Production Lines', 'Purchases', 'Items', 'Inventory', 'Inventory Movements', 'Stock Receipts', 'Batch Allocation Lines', 'Batches', 'Batch Requirements',
-        'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Batch Closures', 'Bird Count History', 'Bird Sell History'
+        'Batch Allocations', 'Farmers', 'Traders', 'Suppliers', 'Batch Closures', 'Batch Sales', 'Bird Count History', 'Bird Sell History'
     ];
 
     const onAddFarmerCommission = async (commission: CreateFarmerCommission) => {
@@ -499,6 +503,59 @@ const Dashboard = () => {
         queryFn: fetchBatchClosures,
         staleTime: 5 * 60 * 1000,
     });
+
+    const [newBatchSale, setNewBatchSale] = useState<NewBatchSale>({
+        item_code: '',
+        item_name: '',
+        batch_id: '',
+        farmer_name: '',
+        trader_id: '',
+        trader_name: '',
+        avg_weight: '',
+        rate: '',
+        quantity: '',
+        value: ''
+    });
+
+    const { data: batchSales = [], isLoading: loadingBatchSales } = useQuery({
+        queryKey: ['batch_sales'],
+        queryFn: fetchBatchSales,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const handleItemCodeSelect2 = (itemCode: string) => {
+        const selectedItem = items.find(item => item.item_code === itemCode);
+        if (selectedItem) {
+            setNewBatchSale(prev => ({
+                ...prev,
+                item_code: itemCode,
+                item_name: selectedItem.item_name
+            }));
+        }
+    };
+
+    const handleBatchSelect = (batchId: number) => {
+        const selectedBatch = batches.find(batch => batch.batch_id === batchId);
+        if (selectedBatch) {
+            setNewBatchSale(prev => ({
+                ...prev,
+                batch_id: batchId,
+                farmer_name: selectedBatch.farmer_name
+            }));
+        }
+    };
+
+    const handleTraderSelect = (traderId: number) => {
+        const selectedTrader = traders.find(trader => trader.trader_id === traderId);
+        if (selectedTrader) {
+            setNewBatchSale(prev => ({
+                ...prev,
+                trader_id: traderId,
+                trader_name: selectedTrader.name
+            }));
+        }
+    };
+
 
 
 
@@ -827,6 +884,50 @@ const Dashboard = () => {
                     />
                 )}
 
+                {activeTab === 'Batch Sales' && (
+                    <BatchSalesTable
+                        batchSales={batchSales}
+                        items={items}
+                        batches={batches}
+                        traders={traders}
+                        loading={loading}
+                        showAddForm={showAddForm}
+                        newBatchSale={newBatchSale}
+                        setShowAddForm={setShowAddForm}
+                        setNewBatchSale={setNewBatchSale}
+                        handleItemCodeSelect={handleItemCodeSelect2}
+                        handleBatchSelect={handleBatchSelect}
+                        handleTraderSelect={handleTraderSelect}
+                        handleAddBatchSale={() => {
+                            const payload: BatchSalePayload = {
+                                item_code: newBatchSale.item_code,
+                                batch_id: Number(newBatchSale.batch_id),
+                                trader_id: Number(newBatchSale.trader_id),
+                                avg_weight: Number(newBatchSale.avg_weight),
+                                rate: Number(newBatchSale.rate),
+                                quantity: Number(newBatchSale.quantity),
+                                value: Number(newBatchSale.value),
+                                created_by: user ? user.user_id : 9999
+                            };
+                            handleAddBatchSale(payload, queryClient, setLoading, () => {
+                                setNewBatchSale({
+                                    item_code: '',
+                                    item_name: '',
+                                    batch_id: '',
+                                    farmer_name: '',
+                                    trader_id: '',
+                                    trader_name: '',
+                                    avg_weight: '',
+                                    rate: '',
+                                    quantity: '',
+                                    value: ''
+                                });
+                                setShowAddForm(false);
+                            });
+                        }}
+                    />
+                )}
+
                 {activeTab !== 'Purchases' && activeTab !== 'Items' && activeTab !== 'Farmers' && activeTab !== 'Suppliers' &&
                     activeTab !== 'Traders' &&
                     activeTab !== 'Production Lines' &&
@@ -840,7 +941,8 @@ const Dashboard = () => {
                     activeTab !== 'Batch Allocation Lines' &&
                     activeTab !== 'Ledger Accounts' &&
                     activeTab !== 'Bird Count History' &&
-                    activeTab !== 'Batch Closures' && (
+                    activeTab !== 'Batch Closures' &&
+                    activeTab !== 'Batch Sales' && (
 
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <h2 className="text-xl font-semibold text-gray-800 mb-2">{activeTab}</h2>
