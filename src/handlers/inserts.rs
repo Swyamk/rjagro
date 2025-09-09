@@ -1,8 +1,9 @@
 use crate::models::*;
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::Utc;
-use entity::sea_orm_active_enums::BatchStatus;
+use entity::sea_orm_active_enums::{BatchStatus, LedgerAccountType};
 use entity::{sea_orm_active_enums::RequirementStatus, *};
+use sea_orm::prelude::Decimal;
 use sea_orm::EntityTrait;
 use sea_orm::TransactionTrait;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
@@ -418,4 +419,83 @@ pub async fn create_batch_closure_summary(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(inserted))
+}
+
+pub async fn create_ledger_entry(
+    State(db): State<DatabaseConnection>,
+    Json(payload): Json<CreateLedgerEntry>,
+) -> Result<Json<ledger_entries::Model>, StatusCode> {
+    // Validate presence and non-negativity of amounts
+    let debit_val = payload.debit.unwrap_or(Decimal::ZERO);
+    let credit_val = payload.credit.unwrap_or(Decimal::ZERO);
+
+    if debit_val == Decimal::ZERO && credit_val == Decimal::ZERO {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    if debit_val < Decimal::ZERO || credit_val < Decimal::ZERO {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Start transaction
+    let txn = db
+        .begin()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // 1. Fetch account (within transaction to keep consistent read)
+    let account = ledger_accounts::Entity::find_by_id(payload.account_id)
+        .one(&txn)
+        .await
+        .map_err(|_| {
+            // try to rollback if fetch fails (best-effort)
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or_else(|| StatusCode::NOT_FOUND)?;
+
+    // 2. Compute delta depending on account type
+    //    For Asset/Expense: delta = debit - credit
+    //    For Liability/Equity/Revenue: delta = credit - debit
+    let delta: Decimal = match account.account_type {
+        LedgerAccountType::Asset | LedgerAccountType::Expense => debit_val - credit_val,
+        LedgerAccountType::Liability | LedgerAccountType::Equity | LedgerAccountType::Revenue => {
+            credit_val - debit_val
+        }
+    };
+
+    let new_balance = account.current_balance + delta;
+
+    // 3. Build and insert ledger entry (stores both debit and credit as provided)
+    let new_entry = ledger_entries::ActiveModel {
+        account_id: Set(payload.account_id),
+        debit: Set(payload.debit),
+        credit: Set(payload.credit),
+        txn_date: Set(payload.txn_date),
+        reference_table: Set(payload.reference_table.clone()),
+        reference_id: Set(payload.reference_id),
+        narration: Set(payload.narration.clone()),
+        txn_group_id: Set(Uuid::new_v4()),
+        created_at: Set(Utc::now().into()),
+        created_by: Set(payload.created_by),
+        ..Default::default()
+    };
+
+    let inserted_entry = new_entry
+        .insert(&txn)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // 4. Update account balance
+    let mut account_am: ledger_accounts::ActiveModel = account.into();
+    account_am.current_balance = Set(new_balance);
+    account_am
+        .update(&txn)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // 5. Commit transaction
+    txn.commit()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(inserted_entry))
 }

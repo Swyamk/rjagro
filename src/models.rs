@@ -224,3 +224,15 @@ pub struct CreateBatchSale {
     pub value: Decimal,
     pub created_by: i32,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateLedgerEntry {
+    pub account_id: i32,
+    pub debit: Option<Decimal>,
+    pub credit: Option<Decimal>,
+    pub txn_date: NaiveDate,
+    pub narration: Option<String>,
+    pub reference_table: Option<String>,
+    pub reference_id: Option<i32>,
+    pub created_by: Option<i32>,
+}

@@ -1,17 +1,18 @@
-import React from 'react';
+'use client'
+import React, { useState } from 'react';
 import { Filter, ChevronLeft, ChevronRight, Plus, X, Save, DollarSign } from 'lucide-react';
-import { LedgerAccount, LedgerEntry, NewLedgerEntry } from '@/app/types/interfaces';
+import { LedgerAccount, LedgerEntry, LedgerEntryPayload, NewLedgerEntry } from '@/app/types/interfaces';
 import { capitalizeWords } from '@/app/utils/helper';
 
 interface LedgerEntriesTableProps {
     ledgerEntries: LedgerEntry[];
-    ledgerAccounts: LedgerAccount[]; // Added for account selection
+    ledgerAccounts: LedgerAccount[];
     loading: boolean;
     showAddForm: boolean;
     newLedgerEntry: NewLedgerEntry;
     setShowAddForm: (show: boolean) => void;
     setNewLedgerEntry: React.Dispatch<React.SetStateAction<NewLedgerEntry>>;
-    handleAddLedgerEntry: () => void;
+    handleAddLedgerEntry: (entry: LedgerEntryPayload) => void;
 }
 
 const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
@@ -28,6 +29,7 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
         const account = ledgerAccounts.find(acc => acc.account_id === account_id);
         return account ? { name: account.name, type: account.account_type } : { name: '-', type: '-' };
     };
+    const [transactionType, setTransactionType] = useState<'debit' | 'credit' | ''>('');
     const formatCurrency = (amount?: number) => {
         if (!amount || isNaN(amount)) return '-';
         return `₹${Number(amount).toFixed(2)}`;
@@ -67,22 +69,6 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
         resetForm();
     };
 
-    const handleDebitChange = (value: string) => {
-        setNewLedgerEntry(prev => ({
-            ...prev,
-            debit: value ? parseFloat(value) : '',
-            credit: '' // Clear credit when debit is entered
-        }));
-    };
-
-    const handleCreditChange = (value: string) => {
-        setNewLedgerEntry(prev => ({
-            ...prev,
-            credit: value ? parseFloat(value) : '',
-            debit: '' // Clear debit when credit is entered
-        }));
-    };
-
     const getAmountColor = (accountType?: string, amountType?: 'debit' | 'credit', amount?: number) => {
         if (!amount || amount === 0) return 'text-gray-400';
 
@@ -99,7 +85,37 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
         }
     };
 
+    const handleAddLedgerEntryWithValidation = () => {
+        // Validate required fields
+        if (!newLedgerEntry.account_id) {
+            alert('Please select an account');
+            return;
+        }
+        if (!newLedgerEntry.txn_date) {
+            alert('Please select a transaction date');
+            return;
+        }
+        if (!newLedgerEntry.debit && !newLedgerEntry.credit) {
+            alert('Please enter either debit or credit amount');
+            return;
+        }
+        if (newLedgerEntry.debit && newLedgerEntry.credit) {
+            alert('Please enter either debit OR credit, not both');
+            return;
+        }
 
+        const entryToSend: LedgerEntryPayload = {
+            account_id: Number(newLedgerEntry.account_id),
+            debit: newLedgerEntry.debit ? Number(newLedgerEntry.debit) : undefined,
+            credit: newLedgerEntry.credit ? Number(newLedgerEntry.credit) : undefined,
+            txn_date: newLedgerEntry.txn_date,
+            reference_table: newLedgerEntry.reference_table || undefined,
+            reference_id: newLedgerEntry.reference_id ? Number(newLedgerEntry.reference_id) : undefined,
+            narration: newLedgerEntry.narration || undefined,
+        };
+
+        handleAddLedgerEntry(entryToSend);
+    };
 
     return (
         <div className="bg-white rounded-lg shadow">
@@ -136,120 +152,190 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-black">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Account *
-                            </label>
-                            <select
-                                value={newLedgerEntry.account_id}
-                                onChange={(e) => setNewLedgerEntry(prev => ({
-                                    ...prev,
-                                    account_id: e.target.value ? parseInt(e.target.value) : ''
-                                }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            >
-                                <option value="">Select Account</option>
-                                {ledgerAccounts.map((account) => (
-                                    <option key={account.account_id} value={account.account_id}>
-                                        {account.name} ({account.account_type})
-                                    </option>
-                                ))}
-                            </select>
+                    <div className="space-y-4 text-black">
+                        {/* Info Note */}
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-gray-700">
+                            <p><strong>Assets & Expenses</strong> → Debit increases, Credit decreases</p>
+                            <p><strong>Liabilities, Capital & Incomes</strong> → Credit increases, Debit decreases</p>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Transaction Date *
-                            </label>
-                            <input
-                                type="date"
-                                value={newLedgerEntry.txn_date}
-                                onChange={(e) => setNewLedgerEntry(prev => ({ ...prev, txn_date: e.target.value }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            />
+                        {/* Row 1: Account and Date */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Required Field - Account */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Account *
+                                </label>
+                                <select
+                                    value={newLedgerEntry.account_id}
+                                    onChange={(e) => setNewLedgerEntry(prev => ({
+                                        ...prev,
+                                        account_id: e.target.value === '' ? '' : Number(e.target.value)
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                >
+                                    <option value="">Select Account</option>
+                                    {ledgerAccounts.map((account) => (
+                                        <option key={account.account_id} value={account.account_id.toString()}>
+                                            {account.name} ({account.account_type})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Required Field - Transaction Date */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Transaction Date *
+                                </label>
+                                <input
+                                    type="date"
+                                    value={newLedgerEntry.txn_date}
+                                    onChange={(e) => setNewLedgerEntry(prev => ({
+                                        ...prev,
+                                        txn_date: e.target.value
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Debit Amount
-                            </label>
-                            <input
-                                type="number"
-                                value={newLedgerEntry.debit}
-                                onChange={(e) => handleDebitChange(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="0.00"
-                                step="0.01"
-                                disabled={!!newLedgerEntry.credit}
-                            />
+                        {/* Row 2: Transaction Type and Amount */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Transaction Type Selection */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Transaction Type *
+                                </label>
+                                <select
+                                    value={transactionType}
+                                    onChange={(e) => {
+                                        const type = e.target.value as 'debit' | 'credit' | '';
+                                        setTransactionType(type);
+
+                                        if (type === 'debit') {
+                                            setNewLedgerEntry(prev => ({
+                                                ...prev,
+                                                debit: prev.credit || prev.debit || '', // Preserve existing amount
+                                                credit: ''
+                                            }));
+                                        } else if (type === 'credit') {
+                                            setNewLedgerEntry(prev => ({
+                                                ...prev,
+                                                credit: prev.debit || prev.credit || '', // Preserve existing amount
+                                                debit: ''
+                                            }));
+                                        } else {
+                                            setNewLedgerEntry(prev => ({
+                                                ...prev,
+                                                debit: '',
+                                                credit: ''
+                                            }));
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                >
+                                    <option value="">Select Type</option>
+                                    <option value="debit">Debit</option>
+                                    <option value="credit">Credit</option>
+                                </select>
+                            </div>
+
+                            {/* Amount Field - Show based on selection */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Amount *
+                                </label>
+                                <input
+                                    type="number"
+                                    value={transactionType === 'debit' ? newLedgerEntry.debit : transactionType === 'credit' ? newLedgerEntry.credit : ''}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (transactionType === 'debit') {
+                                            setNewLedgerEntry(prev => ({
+                                                ...prev,
+                                                debit: value === '' ? '' : Number(value),
+                                                credit: ''
+                                            }));
+                                        } else if (transactionType === 'credit') {
+                                            setNewLedgerEntry(prev => ({
+                                                ...prev,
+                                                credit: value === '' ? '' : Number(value),
+                                                debit: ''
+                                            }));
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    disabled={!transactionType}
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Credit Amount
-                            </label>
-                            <input
-                                type="number"
-                                value={newLedgerEntry.credit}
-                                onChange={(e) => handleCreditChange(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="0.00"
-                                step="0.01"
-                                disabled={!!newLedgerEntry.debit}
-                            />
+                        {/* Row 3: Optional Fields */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Reference Table
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newLedgerEntry.reference_table || ''}
+                                    onChange={(e) => setNewLedgerEntry(prev => ({
+                                        ...prev,
+                                        reference_table: e.target.value
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    placeholder="e.g., purchases, sales"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Reference ID
+                                </label>
+                                <input
+                                    type="number"
+                                    value={newLedgerEntry.reference_id || ''}
+                                    onChange={(e) => setNewLedgerEntry(prev => ({
+                                        ...prev,
+                                        reference_id: e.target.value === '' ? '' : Number(e.target.value)
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    placeholder="Reference record ID"
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Reference Table
-                            </label>
-                            <input
-                                type="text"
-                                value={newLedgerEntry.reference_table}
-                                onChange={(e) => setNewLedgerEntry(prev => ({ ...prev, reference_table: e.target.value }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="e.g., purchases, sales"
-                            />
-                        </div>
+                        {/* Row 4: Narration and Submit */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Narration
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newLedgerEntry.narration || ''}
+                                    onChange={(e) => setNewLedgerEntry(prev => ({
+                                        ...prev,
+                                        narration: e.target.value
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    placeholder="Transaction description or notes"
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Reference ID
-                            </label>
-                            <input
-                                type="number"
-                                value={newLedgerEntry.reference_id}
-                                onChange={(e) => setNewLedgerEntry(prev => ({
-                                    ...prev,
-                                    reference_id: e.target.value ? parseInt(e.target.value) : ''
-                                }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Reference record ID"
-                            />
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Narration
-                            </label>
-                            <input
-                                type="text"
-                                value={newLedgerEntry.narration}
-                                onChange={(e) => setNewLedgerEntry(prev => ({ ...prev, narration: e.target.value }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Transaction description or notes"
-                            />
-                        </div>
-
-                        <div className="flex items-end">
-                            <button
-                                onClick={handleAddLedgerEntry}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                                <Save size={18} />
-                                Save Entry
-                            </button>
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleAddLedgerEntryWithValidation}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                    disabled={loading}
+                                >
+                                    <Save size={18} />
+                                    {loading ? 'Saving...' : 'Save Entry'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -325,12 +411,10 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {new Date(entry.txn_date).toLocaleDateString('en-IN')}
                                     </td>
-                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium  ${getAmountColor(getAccountDetails(entry.account_id).type, 'debit', entry.debit)
-                                        }`}>
+                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium ${getAmountColor(getAccountDetails(entry.account_id).type, 'debit', entry.debit)}`}>
                                         {formatCurrency(entry.debit)}
                                     </td>
-                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium ${getAmountColor(getAccountDetails(entry.account_id).type, 'credit', entry.credit)
-                                        }`}>
+                                    <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium ${getAmountColor(getAccountDetails(entry.account_id).type, 'credit', entry.credit)}`}>
                                         {formatCurrency(entry.credit)}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -359,8 +443,6 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                     </tbody>
                 </table>
             </div>
-
-
 
             {/* Summary Footer */}
             {ledgerEntries.length > 0 && (

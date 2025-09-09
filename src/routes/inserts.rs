@@ -5,7 +5,9 @@ use sea_orm::DatabaseConnection;
 
 use crate::handlers::batch_sales::create_batch_sale;
 use crate::handlers::batches::create_batch;
-use crate::handlers::inserts::{create_batch_closure_summary, create_farmer_commission};
+use crate::handlers::inserts::{
+    create_batch_closure_summary, create_farmer_commission, create_ledger_entry,
+};
 use crate::{
     auth::middleware::{require_roles_middleware, RequireRoles},
     handlers::{
@@ -23,6 +25,7 @@ pub fn insert_routes() -> Router<DatabaseConnection> {
         .route("/ledger_account", post(create_ledger_account))
         .route("/batch_closure_summary", post(create_batch_closure_summary))
         .route("/batch_sales", post(create_batch_sale))
+        .route("/ledger_entry", post(create_ledger_entry))
         .layer(from_fn_with_state(
             RequireRoles::new(&[UserRole::Admin]),
             require_roles_middleware,

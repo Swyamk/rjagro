@@ -21,11 +21,13 @@ export const handleAddLedgerEntry = async (
         return;
     }
 
+    console.log("Adding ledger entry with payload:", payload);
+
     setLoading(true);
     toast.info("Adding ledger entry...");
 
     try {
-        await api.post("/insert/ledger_entries", payload);
+        await api.post("/insert/ledger_entry", payload);
 
         queryClient.invalidateQueries(["ledger_entries"]);
 
