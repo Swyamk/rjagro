@@ -9,7 +9,7 @@ export const fetchItems = async (): Promise<Item[]> => {
 
 export const handleAddItem = async (
     item: Item,
-    queryClient: any, 
+    queryClient: any,
     setLoading: (loading: boolean) => void
 ) => {
     try {
@@ -18,6 +18,7 @@ export const handleAddItem = async (
             item_code: item.item_code,
             item_name: item.item_name,
             unit: item.unit.trim() === '' ? null : item.unit,
+            item_category: item.item_category
         });
 
         // Invalidate cache -> refetch items automatically

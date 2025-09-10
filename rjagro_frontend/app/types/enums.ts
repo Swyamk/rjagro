@@ -1,6 +1,6 @@
 export enum ItemCategory {
-  Feed = "feed",
-  Medicine = "medicine",
-  Chicks = "chicks",
+  Feed = "Feed",
+  Medicine = "Medicine",
+  Chicks = "Chicks",
   FinishedBirds = "FinishedBirds",
 }

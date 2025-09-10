@@ -90,16 +90,16 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                             onChange={(e) =>
                                 setNewItem((prev) => ({
                                     ...prev,
-                                    category: e.target.value as ItemCategory,
+                                    item_category: e.target.value as ItemCategory,
                                 }))
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         >
                             <option value="">Select category</option>
-                            <option value="feed">Feed</option>
-                            <option value="medicine">Medicine</option>
-                            <option value="chicks">Chicks</option>
-                            <option value="FinishedBirds">FinishedBirds</option>
+                            <option value={ItemCategory.Feed}>Feed</option>
+                            <option value={ItemCategory.Medicine}>Medicine</option>
+                            <option value={ItemCategory.Chicks}>Chicks</option>
+                            <option value={ItemCategory.FinishedBirds}>Finished Birds</option>
                         </select>
                     </div>
 
