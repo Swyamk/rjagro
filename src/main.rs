@@ -15,6 +15,7 @@ mod routes;
 use crate::auth::login::login_handler;
 use crate::handlers::visibility::get_visibility_handler;
 use crate::routes::admin::admin::admin;
+use crate::routes::fetch_by_id::fetch_by_id;
 use crate::routes::inserts::insert_routes;
 use crate::{auth::middleware::auth_middleware, routes::fetch_all::fetch_all};
 use tower_http::cors::CorsLayer;
@@ -44,17 +45,15 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
     };
 
     // 3. Run migrations
-    // Migrator::up(&db, None)
-    //     .await
-    //     .expect("Migration failed");
+    // Migrator::up(&db, None).await.expect("Migration failed");
     // Migrator::fresh(&db).await.expect("failllled");
 
     // 4. Build router
     let shared_secrets = Arc::new(secret_store);
 
     let cors = CorsLayer::new()
-        .allow_origin("https://rjagro.vercel.app".parse::<HeaderValue>().unwrap())
-        // .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
+        // .allow_origin("https://rjagro.vercel.app".parse::<HeaderValue>().unwrap())
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::OPTIONS])
         .allow_headers([
             http::header::CONTENT_TYPE,
@@ -66,15 +65,18 @@ async fn main(#[shuttle_runtime::Secrets] secret_store: SecretStore) -> shuttle_
     let router = Router::new()
         .nest("/admin", admin())
         .nest("/getall", fetch_all())
+        .nest("/getbyid", fetch_by_id())
         .nest("/insert", insert_routes())
         .route("/", get(hello_world))
         .route("/visibility", get(get_visibility_handler))
+        // .route("/generate", post(generate))
         .layer(axum::middleware::from_fn_with_state(
             shared_secrets.clone(),
             auth_middleware,
         ))
         .route("/login", post(login_handler))
         .with_state(db)
+        .with_state(shared_secrets)
         .layer(cors);
 
     info!("🚀 Server is ready and routes are mounted");
