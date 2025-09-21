@@ -1,6 +1,7 @@
 import React from 'react';
-import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save, TrendingDown, TrendingUp } from 'lucide-react';
+import { Edit, Filter, ChevronLeft, ChevronRight, Plus, X, Save, TrendingDown, TrendingUp, ArrowUp, ArrowUpDown, ArrowDown } from 'lucide-react';
 import { Batch, BirdCountHistory, NewBirdCountHistory } from '@/app/types/interfaces';
+import { TableConfigs, useTableSorting } from '@/app/hooks/sorting';
 
 interface BirdCountHistoryTableProps {
     birdCountHistory: BirdCountHistory[];
@@ -23,6 +24,13 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
     setNewRecord,
     handleAddRecord,
 }) => {
+
+    const { sortedData, requestSort, getSortIcon } = useTableSorting(
+        birdCountHistory,
+        { key: 'record_date', direction: 'desc' },
+        TableConfigs.birdCountHistory.getValueFn
+    );
+
     const getNetChange = (deaths: number, additions: number) => {
         const net = additions - deaths;
         return {
@@ -35,6 +43,29 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
     const getBatchInfo = (batchId: number) => {
         const batch = batches.find(b => b.batch_id === batchId);
         return batch ? `Batch ${batchId} - ${batch.farmer_name}` : `Batch ${batchId}`;
+    };
+
+    const SortableHeader: React.FC<{
+        columnKey: string;
+        children: React.ReactNode;
+        className?: string;
+    }> = ({ columnKey, children, className = "" }) => {
+        const IconComponent = getSortIcon(columnKey) === 'ArrowUp' ? ArrowUp :
+            getSortIcon(columnKey) === 'ArrowDown' ? ArrowDown : ArrowUpDown;
+
+        return (
+            <th
+                className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors ${className}`}
+                onClick={() => requestSort(columnKey)}
+            >
+
+                <div className="flex items-center justify-between group">
+
+                    <span>{children}</span>
+                    <IconComponent size={14} className="ml-1 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                </div>
+            </th>
+        );
     };
 
     return (
@@ -56,7 +87,6 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                 </div>
             </div>
 
-            {/* Add Record Form */}
             {showAddForm && (
                 <div className="p-4 border-b bg-gray-50">
                     <div className="flex items-center justify-between mb-4">
@@ -76,9 +106,9 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                             </label>
                             <select
                                 value={newRecord.batch_id}
-                                onChange={(e) => setNewRecord(prev => ({ 
-                                    ...prev, 
-                                    batch_id: e.target.value ? parseInt(e.target.value) : '' 
+                                onChange={(e) => setNewRecord(prev => ({
+                                    ...prev,
+                                    batch_id: e.target.value ? parseInt(e.target.value) : ''
                                 }))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             >
@@ -110,9 +140,9 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                             <input
                                 type="number"
                                 value={newRecord.deaths}
-                                onChange={(e) => setNewRecord(prev => ({ 
-                                    ...prev, 
-                                    deaths: e.target.value ? parseInt(e.target.value) : '' 
+                                onChange={(e) => setNewRecord(prev => ({
+                                    ...prev,
+                                    deaths: e.target.value ? parseInt(e.target.value) : ''
                                 }))}
                                 className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                 placeholder="0"
@@ -127,9 +157,9 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                             <input
                                 type="number"
                                 value={newRecord.additions}
-                                onChange={(e) => setNewRecord(prev => ({ 
-                                    ...prev, 
-                                    additions: e.target.value ? parseInt(e.target.value) : '' 
+                                onChange={(e) => setNewRecord(prev => ({
+                                    ...prev,
+                                    additions: e.target.value ? parseInt(e.target.value) : ''
                                 }))}
                                 className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                 placeholder="0"
@@ -150,14 +180,13 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                                     return net > 0 ? `+${net}` : net.toString();
                                 })()}
                                 readOnly
-                                className={`w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-center font-medium ${
-                                    (() => {
-                                        const deaths = typeof newRecord.deaths === 'number' ? newRecord.deaths : 0;
-                                        const additions = typeof newRecord.additions === 'number' ? newRecord.additions : 0;
-                                        const net = additions - deaths;
-                                        return net > 0 ? 'text-green-700' : net < 0 ? 'text-red-700' : 'text-gray-700';
-                                    })()
-                                }`}
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-center font-medium ${(() => {
+                                    const deaths = typeof newRecord.deaths === 'number' ? newRecord.deaths : 0;
+                                    const additions = typeof newRecord.additions === 'number' ? newRecord.additions : 0;
+                                    const net = additions - deaths;
+                                    return net > 0 ? 'text-green-700' : net < 0 ? 'text-red-700' : 'text-gray-700';
+                                })()
+                                    }`}
                             />
                         </div>
 
@@ -191,30 +220,30 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <SortableHeader columnKey="record_id" className="text-gray-500">
                                 Record ID
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            </SortableHeader>
+                            <SortableHeader columnKey="batch_id" className="text-gray-500">
                                 Batch
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            </SortableHeader>
+                            <SortableHeader columnKey="record_date" className="text-gray-500">
                                 Record Date
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-red-500 uppercase tracking-wider">
+                            </SortableHeader>
+                            <SortableHeader columnKey="deaths" className="text-red-500">
                                 Deaths
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-green-500 uppercase tracking-wider">
+                            </SortableHeader>
+                            <SortableHeader columnKey="additions" className="text-green-500">
                                 Additions
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            </SortableHeader>
+                            <SortableHeader columnKey="net_change" className="text-gray-500">
                                 Net Change
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            </SortableHeader>
+                            <SortableHeader columnKey="notes" className="text-gray-500">
                                 Notes
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            </SortableHeader>
+                            <SortableHeader columnKey="created_at" className="text-gray-500">
                                 Created At
-                            </th>
+                            </SortableHeader>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
                             </th>
@@ -227,14 +256,14 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                                     Loading...
                                 </td>
                             </tr>
-                        ) : birdCountHistory.length === 0 ? (
+                        ) : sortedData.length === 0 ? (
                             <tr>
                                 <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                                     No bird count records found
                                 </td>
                             </tr>
                         ) : (
-                            birdCountHistory.map((record) => {
+                            sortedData.map((record) => {
                                 const netChange = getNetChange(record.deaths, record.additions);
                                 return (
                                     <tr key={record.record_id} className="hover:bg-gray-50">
@@ -260,13 +289,12 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                                                netChange.isPositive 
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : netChange.isNeutral
+                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${netChange.isPositive
+                                                ? 'bg-green-100 text-green-800'
+                                                : netChange.isNeutral
                                                     ? 'bg-gray-100 text-gray-800'
                                                     : 'bg-red-100 text-red-800'
-                                            }`}>
+                                                }`}>
                                                 {netChange.isPositive && <TrendingUp size={12} />}
                                                 {!netChange.isPositive && !netChange.isNeutral && <TrendingDown size={12} />}
                                                 {netChange.value > 0 ? `+${netChange.value}` : netChange.value}
@@ -293,7 +321,7 @@ const BirdCountHistoryTable: React.FC<BirdCountHistoryTableProps> = ({
 
             <div className="flex items-center justify-between px-4 py-3 border-t">
                 <div className="text-sm text-gray-500">
-                    Showing {birdCountHistory.length} of {birdCountHistory.length} results
+                    Showing {sortedData.length} of {sortedData.length} results
                 </div>
                 <div className="flex items-center gap-2">
                     <button className="flex items-center gap-1 px-3 py-2 text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50">
