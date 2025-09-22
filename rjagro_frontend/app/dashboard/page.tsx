@@ -555,7 +555,7 @@ const Dashboard = () => {
             }));
         }
     };
-
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 
 
@@ -565,19 +565,68 @@ const Dashboard = () => {
                 <h1 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
 
                 {/* Tab Navigation */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                    {tabs.map((tab) => (
+                <div className="mb-6">
+                    {/* Desktop tabs - hidden on mobile */}
+                    <div className="hidden md:flex flex-wrap gap-2">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out transform hover:scale-105 hover:-translate-y-1 hover:shadow-lg hover:shadow-green-500/25 ${activeTab === tab
+                                    ? 'bg-green-600 text-white shadow-md border-green-600'
+                                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-green-400'
+                                    }`}
+                            >
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Mobile menu - visible on mobile */}
+                    <div className="md:hidden">
+                        {/* Menu button */}
                         <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab
-                                ? 'bg-green-600 text-white'
-                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                                }`}
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-green-400 transition-all duration-300 ease-in-out"
                         >
-                            {tab}
+                            <span>{activeTab}</span>
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'rotate-180' : ''
+                                    }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 9l-7 7-7-7"
+                                />
+                            </svg>
                         </button>
-                    ))}
+
+                        {/* Dropdown menu */}
+                        {isMobileMenuOpen && (
+                            <div className="mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => {
+                                            setActiveTab(tab);
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-3 text-left text-sm font-medium transition-all duration-300 ease-in-out ${activeTab === tab
+                                            ? 'bg-green-600 text-white'
+                                            : 'text-gray-600 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {tab}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {activeTab === 'Production Lines' && (
