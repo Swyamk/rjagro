@@ -4,6 +4,8 @@ import { Plus, X, Save, Check, XCircle, Clock, CheckCircle2, AlertCircle } from 
 import { handleApproveRequirement, handleRejectRequirement } from '@/app/api/batch_requirements';
 import { useAuth } from '@/app/hooks/useAuth';
 import { Batch, BatchRequirement, Farmer, Item, NewBatchRequirement, ProductionLine, SupervisorSimplified } from '@/app/types/interfaces';
+import { useBatchRequirementSorting } from '@/app/hooks/custom_sorting';
+import SortableHeader from './sortable_headers/header';
 
 interface BatchRequirementsProps {
   requirements: BatchRequirement[];
@@ -43,30 +45,35 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
 
   const isAdmin = user?.role === 'Admin';
 
+
+
   // Filter and sort requirements: pending first, then others by date (newest first, older last)
   const filteredAndSortedRequirements = useMemo(() => {
     let filtered = requirements;
-    
+
     // Apply status filter
     if (statusFilter !== 'all') {
       filtered = requirements.filter(r => r.status?.toLowerCase() === statusFilter.toLowerCase());
     }
-    
+
     // Sort the filtered results
     return [...filtered].sort((a, b) => {
       const aStatus = a.status?.toLowerCase();
       const bStatus = b.status?.toLowerCase();
-      
+
       // If one is pending and other is not, pending comes first
       if (aStatus === 'pending' && bStatus !== 'pending') return -1;
       if (bStatus === 'pending' && aStatus !== 'pending') return 1;
-      
+
       // If both are pending or both are non-pending, sort by date (newest first)
       const aDate = new Date(a.request_date);
       const bDate = new Date(b.request_date);
       return bDate.getTime() - aDate.getTime();
     });
   }, [requirements, statusFilter]);
+
+  const { sortedData, requestSort, getSortIcon } = useBatchRequirementSorting(filteredAndSortedRequirements);
+
 
   // Get unique statuses for filter dropdown
   const availableStatuses = useMemo(() => {
@@ -186,7 +193,7 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-semibold text-gray-800">Batch Requirements</h2>
-          
+
           {/* Status Filter */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">Filter by Status:</label>
@@ -203,7 +210,7 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
               ))}
             </select>
           </div>
-          
+
           {/* Show filtered count */}
           {statusFilter !== 'all' && (
             <span className="text-sm text-gray-500">
@@ -211,7 +218,7 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
             </span>
           )}
         </div>
-        
+
         <button
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -341,7 +348,16 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Req ID</th>
+              {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Req ID</th>
+              */}
+              <SortableHeader
+                columnKey="req_id"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={true}
+              >
+                ReqID
+              </SortableHeader>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Line</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
@@ -349,7 +365,15 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th> */}
+              <SortableHeader
+                columnKey="request_date"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={true}
+              >
+                Request Date
+              </SortableHeader>
               {isAdmin && (
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               )}
@@ -363,7 +387,7 @@ const BatchRequirementsTable: React.FC<BatchRequirementsProps> = ({
                 {statusFilter !== 'all' ? `No ${statusFilter} requirements found` : 'No requirements found'}
               </td></tr>
             ) : (
-              filteredAndSortedRequirements.map((r) => (
+              sortedData.map((r) => (
                 <tr key={r.requirement_id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{r.requirement_id}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{r.line_name}</td>

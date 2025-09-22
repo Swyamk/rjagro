@@ -1,4 +1,4 @@
-import { LedgerAccount, LedgerEntry } from "../types/interfaces";
+import { Batch, BatchAllocation, BatchRequirement, LedgerAccount, LedgerEntry } from "../types/interfaces";
 import { useTableSorting } from "./sorting";
 
 export function useLedgerAccountsSorting(ledgerAccounts: LedgerAccount[]) {
@@ -48,5 +48,57 @@ export function useLedgerEntriesSorting(ledgerEntries: LedgerEntry[]) {
         }
     );
 }
+
+export function useBatchesSorting(batch: Batch[]) {
+    return useTableSorting<Batch>(
+        batch,
+        { key: 'start_date', direction: 'desc' },
+        (item: Batch, key: string) => {
+            switch (key) {
+                case 'start_date':
+                    return new Date(item.start_date);
+                case 'batch_id':
+                    return item.batch_id;
+                default:
+                    return item[key as keyof Batch] as string | number;
+            }
+        }
+    );
+}
+
+export function useBatchRequirementSorting(batch_req: BatchRequirement[]) {
+    return useTableSorting<BatchRequirement>(
+        batch_req,
+        { key: 'req_id', direction: 'desc' },
+        (item: BatchRequirement, key: string) => {
+            switch (key) {
+                case 'req_id':
+                    return item.requirement_id;
+                case 'request_date':
+                    return item.request_date;
+                default:
+                    return item[key as keyof BatchRequirement] as string | number;
+            }
+        }
+    );
+}
+
+export function useBatchAllocationSorting(batch_req: BatchAllocation[]) {
+    return useTableSorting<BatchAllocation>(
+        batch_req,
+        { key: 'alloc_date', direction: 'desc' },
+        (item: BatchAllocation, key: string) => {
+            switch (key) {
+                case 'alloc_date':
+                    return new Date(item.allocation_date);
+                case 'alloc_id':
+                    return item.allocation_id;
+                default:
+                    return item[key as keyof BatchAllocation] as string | number;
+            }
+        }
+    );
+}
+
 
 

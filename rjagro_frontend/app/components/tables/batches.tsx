@@ -15,6 +15,8 @@ import {
 } from '@/app/types/interfaces';
 import { useAuth } from '@/app/hooks/useAuth';
 import BatchDetailsModal from './modals/batches';
+import { useBatchesSorting } from '@/app/hooks/custom_sorting';
+import SortableHeader from './sortable_headers/header';
 
 interface BatchesTableProps {
     batches: Batch[];
@@ -54,6 +56,9 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
     const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
 
     newBatch.created_by = user?.user_id ?? "";
+
+    const { sortedData, requestSort, getSortIcon } = useBatchesSorting(batches);
+
 
     // Filter items by Chick category
     const chickItems = useMemo(() => {
@@ -242,9 +247,14 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <SortableHeader
+                                columnKey="batch_id"
+                                requestSort={requestSort}
+                                getSortIcon={getSortIcon}
+                                isSortable={true}
+                            >
                                 Batch ID
-                            </th>
+                            </SortableHeader>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Line ID
                             </th>
@@ -254,6 +264,14 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Farmer
                             </th>
+                            <SortableHeader
+                                columnKey="start_date"
+                                requestSort={requestSort}
+                                getSortIcon={getSortIcon}
+                                isSortable={true}
+                            >
+                                Start Date
+                            </SortableHeader>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Initial Chick Count
                             </th>
@@ -282,7 +300,7 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                 </td>
                             </tr>
                         ) : (
-                            batches.map((batch) => (
+                            sortedData.map((batch) => (
                                 <tr key={batch.batch_id} className="hover:bg-gray-50" onDoubleClick={() => openBatchModal(batch)}>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {batch.batch_id}
@@ -297,6 +315,9 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                         {batch.farmer_name}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {batch.start_date}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {batch.initial_bird_count}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -304,8 +325,8 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${batch.status === 'Closed'
-                                                ? 'bg-red-100 text-red-800'
-                                                : 'bg-green-100 text-green-800'
+                                            ? 'bg-red-100 text-red-800'
+                                            : 'bg-green-100 text-green-800'
                                             }`}>
                                             {batch.status}
                                         </span>
