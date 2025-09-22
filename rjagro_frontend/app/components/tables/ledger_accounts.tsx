@@ -1,6 +1,8 @@
 import React from 'react';
 import { Edit, Delete, Filter, ChevronLeft, ChevronRight, Plus, X, Save } from 'lucide-react';
 import { LedgerAccount, NewLedgerAccount } from '@/app/types/interfaces';
+import { useLedgerAccountsSorting } from '@/app/hooks/custom_sorting';
+import SortableHeader from './sortable_headers/header';
 
 interface LedgerAccountsTableProps {
   ledgerAccounts: LedgerAccount[];
@@ -21,6 +23,9 @@ const LedgerAccountsTable: React.FC<LedgerAccountsTableProps> = ({
   setNewLedgerAccount,
   handleAddLedgerAccount,
 }) => {
+  // Use the custom sorting hook
+  const { sortedData, requestSort, getSortIcon } = useLedgerAccountsSorting(ledgerAccounts);
+
   const accountTypes = [
     { value: 'Asset', label: 'Asset' },
     { value: 'Liability', label: 'Liability' },
@@ -146,24 +151,59 @@ const LedgerAccountsTable: React.FC<LedgerAccountsTableProps> = ({
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <SortableHeader
+                columnKey="account_id"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={true}
+              >
                 Account ID
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              </SortableHeader>
+
+              <SortableHeader
+                columnKey="name"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={false}
+              >
                 Account Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              </SortableHeader>
+
+              <SortableHeader
+                columnKey="account_type"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={true}
+              >
                 Account Type
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              </SortableHeader>
+
+              <SortableHeader
+                columnKey="current_balance"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={true}
+              >
                 Current Balance
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              </SortableHeader>
+
+              <SortableHeader
+                columnKey="created_at"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={false}
+              >
                 Created At
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              </SortableHeader>
+
+              <SortableHeader
+                columnKey="actions"
+                requestSort={requestSort}
+                getSortIcon={getSortIcon}
+                isSortable={false}
+              >
                 Actions
-              </th>
+              </SortableHeader>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -173,14 +213,14 @@ const LedgerAccountsTable: React.FC<LedgerAccountsTableProps> = ({
                   Loading...
                 </td>
               </tr>
-            ) : ledgerAccounts.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                   No ledger accounts found
                 </td>
               </tr>
             ) : (
-              ledgerAccounts.map((account) => (
+              sortedData.map((account) => (
                 <tr key={account.account_id} className="hover:bg-gray-50">
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                     {account.account_id}
@@ -196,10 +236,10 @@ const LedgerAccountsTable: React.FC<LedgerAccountsTableProps> = ({
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                     <span
                       className={`font-medium ${(account.account_type === 'Liability' || account.account_type === 'Expense')
-                          ? 'text-red-600'
-                          : account.current_balance >= 0
-                            ? 'text-green-600'
-                            : 'text-red-600'
+                        ? 'text-red-600'
+                        : account.current_balance >= 0
+                          ? 'text-green-600'
+                          : 'text-red-600'
                         }`}
                     >
                       {formatCurrency(account.current_balance)}
@@ -227,7 +267,7 @@ const LedgerAccountsTable: React.FC<LedgerAccountsTableProps> = ({
 
       <div className="flex items-center justify-between px-4 py-3 border-t">
         <div className="text-sm text-gray-500">
-          Showing {ledgerAccounts.length} of {ledgerAccounts.length} results
+          Showing {sortedData.length} of {sortedData.length} results
         </div>
         <div className="flex items-center gap-2">
           <button className="flex items-center gap-1 px-3 py-2 text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50">

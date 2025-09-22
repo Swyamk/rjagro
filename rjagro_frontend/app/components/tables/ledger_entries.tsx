@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Filter, ChevronLeft, ChevronRight, Plus, X, Save, DollarSign } from 'lucide-react';
 import { LedgerAccount, LedgerEntry, LedgerEntryPayload, NewLedgerEntry } from '@/app/types/interfaces';
 import { capitalizeWords } from '@/app/utils/helper';
+import { useLedgerEntriesSorting } from '@/app/hooks/custom_sorting';
+import SortableHeader from './sortable_headers/header';
 
 interface LedgerEntriesTableProps {
     ledgerEntries: LedgerEntry[];
@@ -25,6 +27,8 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
     setNewLedgerEntry,
     handleAddLedgerEntry,
 }) => {
+    const { sortedData, requestSort, getSortIcon } = useLedgerEntriesSorting(ledgerEntries);
+
     const getAccountDetails = (account_id: number) => {
         const account = ledgerAccounts.find(acc => acc.account_id === account_id);
         return account ? { name: account.name, type: account.account_type } : { name: '-', type: '-' };
@@ -354,9 +358,15 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Account Type
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <SortableHeader
+                                columnKey="txn_date"
+                                requestSort={requestSort}
+                                getSortIcon={getSortIcon}
+                                isSortable={true}
+                            >
                                 Date
-                            </th>
+                            </SortableHeader>
+
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Debit
                             </th>
@@ -391,7 +401,7 @@ const LedgerEntriesTable: React.FC<LedgerEntriesTableProps> = ({
                                 </td>
                             </tr>
                         ) : (
-                            ledgerEntries.map((entry) => (
+                            sortedData.map((entry) => (
                                 <tr key={entry.entry_id} className="hover:bg-gray-50">
                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                         #{entry.entry_id}
