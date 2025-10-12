@@ -59,6 +59,11 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
 
     const { sortedData, requestSort, getSortIcon } = useBatchesSorting(batches);
 
+    // Mortality calculation function
+    const calculateMortality = (initial: number, current: number): number => {
+        if (initial === 0) return 0;
+        return ((initial - current) / initial) * 100;
+    };
 
     // Filter items by Chick category
     const chickItems = useMemo(() => {
@@ -279,6 +284,9 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                 Current Chick Count
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Mortality %
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -289,13 +297,13 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                                     Loading...
                                 </td>
                             </tr>
                         ) : batches.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                                     No batches found
                                 </td>
                             </tr>
@@ -322,6 +330,17 @@ const BatchesTable: React.FC<BatchesTableProps> = ({
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {batch.current_bird_count}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                            calculateMortality(batch.initial_bird_count, batch.current_bird_count) > 10
+                                                ? 'bg-red-100 text-red-800'
+                                                : calculateMortality(batch.initial_bird_count, batch.current_bird_count) > 5
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-green-100 text-green-800'
+                                        }`}>
+                                            {calculateMortality(batch.initial_bird_count, batch.current_bird_count).toFixed(1)}%
+                                        </span>
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${batch.status === 'Closed'
