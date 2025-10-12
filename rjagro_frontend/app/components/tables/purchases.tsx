@@ -4,7 +4,6 @@ import { calculateTotalCost } from '../../utils/helper';
 import { Item, LedgerAccountType, NewPurchase, Purchase } from '@/app/types/interfaces';
 import { INVENTORY_ACCOUNT_MAP, PAYMENT_ACCOUNT_MAP } from '@/app/types/constants';
 
-
 interface ExtendedNewPurchase extends NewPurchase {
   category?: string;
   inventory_account_id?: number;
@@ -34,6 +33,38 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
     handleItemCodeSelect,
     handleAddPurchase,
 }) => {
+    const initialFormState: ExtendedNewPurchase = {
+        item_code: '',
+        item_name: '',
+        cost_per_unit: '',
+        quantity: '',
+        supplier: '',
+        payment_method: '',
+        payment_account: undefined,
+        category: '',
+        inventory_account_id: undefined,
+        payment_account_id: undefined
+    };
+
+    const resetForm = () => {
+        setNewPurchase(initialFormState);
+    };
+
+    const handleOpenForm = () => {
+        resetForm();
+        setShowAddForm(true);
+    };
+
+    const handleCloseForm = () => {
+        setShowAddForm(false);
+        resetForm();
+    };
+
+    const handleSubmit = () => {
+        handleAddPurchase();
+        resetForm(); 
+    };
+
     const handlePaymentMethodChange = (paymentMethod: string) => {
         const paymentAccount = paymentMethod === 'Cash' ? LedgerAccountType.Asset : LedgerAccountType.Liability;
         const paymentAccountId = PAYMENT_ACCOUNT_MAP[paymentMethod as keyof typeof PAYMENT_ACCOUNT_MAP];
@@ -68,7 +99,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                 <h2 className="text-xl font-semibold text-gray-800">Purchases</h2>
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => setShowAddForm(true)}
+                        onClick={handleOpenForm}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                     >
                         <Plus size={18} />
@@ -87,7 +118,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-medium text-gray-800">Add New Purchase</h3>
                         <button
-                            onClick={() => setShowAddForm(false)}
+                            onClick={handleCloseForm}
                             className="text-gray-500 hover:text-gray-700"
                         >
                             <X size={20} />
@@ -213,7 +244,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
 
                         <div className="flex items-end">
                             <button
-                                onClick={handleAddPurchase}
+                                onClick={handleSubmit}
                                 disabled={!newPurchase.category || !newPurchase.payment_method}
                                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -267,13 +298,13 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
                                     Loading...
                                 </td>
                             </tr>
                         ) : purchases.length === 0 ? (
                             <tr>
-                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
                                     No purchases found
                                 </td>
                             </tr>
