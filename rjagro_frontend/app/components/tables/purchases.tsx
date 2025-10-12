@@ -60,7 +60,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
         resetForm();
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         handleAddPurchase();
         resetForm(); 
     };
